@@ -1,25 +1,40 @@
 package main
 
 import (
+	"log"
+
 	"github.com/open-function-computers-llc/uptime/server"
 	"github.com/open-function-computers-llc/uptime/site"
+	"github.com/open-function-computers-llc/uptime/storage"
 )
 
-var sites []site.Website
-
 func main() {
-	addresses := []string{
-		"https://openfunctioncomputers.com",
-		"http://kce.ofco.test",
-		"http://localhost:8000",
+	db, err := setUpStorage()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer shutDownStorage(db)
+
+	appStorage := storage.Connection{
+		DB: db,
 	}
 
-	for _, address := range addresses {
-		site := site.Create(address)
-		site.Monitor()
-		sites = append(sites, site)
+	err = storage.BootstrapSites(&appStorage)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	existingSites := site.GetSites(&appStorage)
+
+	shutDownChannel := make(chan string)
+
+	for _, existingSite := range existingSites {
+		site := site.Create(existingSite.URL, &appStorage)
+		site.Monitor(shutDownChannel)
 	}
 
 	server := server.Create()
+	server.Bootstrap(&appStorage)
+	server.SetChannel(&shutDownChannel)
 	server.Serve()
 }
