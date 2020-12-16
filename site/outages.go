@@ -27,7 +27,7 @@ func (s *Website) Outages(dbConn *storage.Connection) []Outage {
 		var outage Outage
 		var start string
 		var end string
-		layout := "2006-01-02 15:04:05"
+		layout := "2006-01-02T15:04:05Z"
 		row.Scan(&start, &end)
 
 		outage.Start, _ = time.Parse(layout, start)

@@ -20,7 +20,7 @@ func (s *Server) handleIndex() http.HandlerFunc {
 			} else {
 				output += "DOWN!!!"
 			}
-			output += "<br /> <a href='/details/" + strconv.Itoa(site.ID) + "'>Details</a> <a href='/remove/" + strconv.Itoa(site.ID) + "'>Delete</a></li>"
+			output += "<br /> <a href='/details?url=" + site.URL + "'>Details</a> <a href='/remove/" + strconv.Itoa(site.ID) + "'>Delete</a></li>"
 		}
 		output += "</ul><a href='/add'>Add Site</a>"
 		io.WriteString(w, output)

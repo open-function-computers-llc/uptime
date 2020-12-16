@@ -10,7 +10,8 @@ func (s *Server) setRoutes() {
 		"/add":          s.handleSiteForm(),
 		"/store":        s.handleStoreSite(),
 		"/remove/{id}":  s.handleRemoveSite(),
-		"/details/{id}": s.handleSiteDetails(),
+		"/details/{id}": s.handleSiteDetailsByID(),
+		"/details":      s.handleSiteDetails(),
 	}
 
 	// wrap the routes in basic middleware stack

@@ -3,19 +3,21 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	"github.com/open-function-computers-llc/uptime/site"
 )
 
-func (s *Server) handleSiteDetails() http.HandlerFunc {
+// Depreciated. Check out the new handler s.handleSiteDetails()
+func (s *Server) handleSiteDetailsByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-
-		siteURL := r.FormValue("url")
-		if siteURL == "" {
+		vars := mux.Vars(r)
+		siteID, err := strconv.Atoi(vars["id"])
+		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
-		site, err := site.FindWebsiteByURL(siteURL, s.storage, s.logger)
+		site, err := site.FindWebsiteByID(siteID, s.storage, s.logger)
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
