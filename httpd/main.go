@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/open-function-computers-llc/uptime/server"
 	"github.com/open-function-computers-llc/uptime/site"
 	"github.com/open-function-computers-llc/uptime/storage"
@@ -14,6 +15,12 @@ func main() {
 	// shared logger instance
 	logger := logrus.New()
 	logger.SetOutput(os.Stdout)
+
+	// first things first, read env
+	err := godotenv.Load()
+	if err != nil {
+		logger.Error(err)
+	}
 
 	db, err := setUpStorage()
 	if err != nil {
