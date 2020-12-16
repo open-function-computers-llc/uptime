@@ -19,16 +19,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer shutDownStorage(db)
+	defer db.Close()
 
 	appStorage := storage.Connection{
 		DB:     db,
 		Logger: logger,
-	}
-
-	err = storage.BootstrapSites(&appStorage)
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	existingSites := site.GetSites(&appStorage)

@@ -3,14 +3,10 @@ package main
 import (
 	"database/sql"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func setUpStorage() (*sql.DB, error) {
-	sqliteDB, err := sql.Open("sqlite3", "./database")
-	return sqliteDB, err
-}
-
-func shutDownStorage(db *sql.DB) {
-	db.Close()
+	dbConn, err := sql.Open("mysql", "lapubell:genius@tcp(localhost:3306)/ofc_uptime?parseTime=true")
+	return dbConn, err
 }
