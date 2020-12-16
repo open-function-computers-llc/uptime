@@ -14,6 +14,7 @@ type Outage struct {
 	Duration float64   `json:"duration"`
 }
 
+// Outages - return all the outages for a given site
 func (s *Website) Outages(dbConn *storage.Connection) []Outage {
 	outages := []Outage{}
 

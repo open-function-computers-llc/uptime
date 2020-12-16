@@ -49,10 +49,10 @@ func (s *Website) Monitor(shutdownChan chan string) {
 				if msg == s.URL {
 					s.Logger.Info("Shutting down monitor for " + s.URL)
 					return
-				} else {
-					s.Logger.Info("Site: " + s.URL + "passing url back to channel " + msg)
-					shutdownChan <- msg
 				}
+
+				s.Logger.Info("Site: " + s.URL + "passing url back to channel " + msg)
+				shutdownChan <- msg
 			default:
 				// nothing to do as the default, this is just here so that the
 				// channel checking is non-blocking
@@ -121,6 +121,7 @@ func (s *Website) setSiteDown(dbConn *storage.Connection) {
 	statement.Close()
 }
 
+// GetSiteID - the the ID of the current website by it's URL
 func (s *Website) GetSiteID(dbConn *storage.Connection) int {
 	var siteID int
 	row, err := dbConn.DB.Query("SELECT id FROM sites WHERE url = '" + s.URL + "'")
