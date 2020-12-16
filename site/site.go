@@ -82,6 +82,7 @@ func (s *Website) getStatusCode() int {
 		s.Logger.Error(err.Error())
 		return 500
 	}
+	defer resp.Body.Close()
 
 	return resp.StatusCode
 }
