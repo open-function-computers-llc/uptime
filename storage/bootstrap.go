@@ -40,6 +40,7 @@ func createTables(dbConn *Connection) error {
 	}
 	// create
 	statement.Exec()
+	statement.Close()
 
 	return nil
 }

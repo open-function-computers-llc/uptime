@@ -16,7 +16,7 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
-		site, err := site.FindWebsiteByID(siteID, s.storage)
+		site, err := site.FindWebsiteByID(siteID, s.storage, s.logger)
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
@@ -26,6 +26,13 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 			"url":     site.URL,
 			"up":      site.IsUp,
 			"outages": site.Outages(s.storage),
+			"uptime": map[string]interface{}{
+				"days1":  site.CalcUptime(1, s.storage),
+				"days7":  site.CalcUptime(7, s.storage),
+				"days30": site.CalcUptime(30, s.storage),
+				"days60": site.CalcUptime(60, s.storage),
+				"days90": site.CalcUptime(90, s.storage),
+			},
 		}
 		dataJSON, _ := json.Marshal(data)
 		w.Write(dataJSON)

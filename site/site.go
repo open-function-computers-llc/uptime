@@ -1,36 +1,38 @@
 package site
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/open-function-computers-llc/uptime/storage"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/gomail.v2"
 )
 
 // Website - a site that we will be checking
 type Website struct {
-	ID   int
-	URL  string
-	IsUp bool
-	DB   *storage.Connection
+	ID     int
+	URL    string
+	IsUp   bool
+	DB     *storage.Connection
+	Logger *logrus.Logger
 }
 
 // Create - Make a new instance of a Website struct
-func Create(address string, dbConn *storage.Connection) Website {
+func Create(address string, dbConn *storage.Connection, logger *logrus.Logger) Website {
 	w := Website{
-		URL:  address,
-		IsUp: true,
-		DB:   dbConn,
+		URL:    address,
+		IsUp:   true,
+		DB:     dbConn,
+		Logger: logger,
 	}
-	log.Println("Created Website:", address)
+	logger.Info("Created Website:", address)
 
 	siteDatabaseID := w.GetSiteID(dbConn)
 	if siteDatabaseID == 0 {
 		err := storage.AddSite(w.URL, dbConn)
 		if err != nil {
-			log.Println("Couldn't add new site to DB:", err)
+			logger.Info("Couldn't add new site to DB:", err)
 		}
 	}
 	return w
@@ -43,10 +45,10 @@ func (s *Website) Monitor(shutdownChan chan string) {
 			select {
 			case msg := <-shutdownChan:
 				if msg == s.URL {
-					log.Println("Shutting down monitor for " + s.URL)
+					s.Logger.Info("Shutting down monitor for " + s.URL)
 					return
 				} else {
-					log.Println("Site: " + s.URL + "passing url back to channel " + msg)
+					s.Logger.Info("Site: " + s.URL + "passing url back to channel " + msg)
 					shutdownChan <- msg
 				}
 			default:
@@ -55,7 +57,7 @@ func (s *Website) Monitor(shutdownChan chan string) {
 			}
 
 			statusCode := s.getStatusCode()
-			log.Println(s.URL+":", statusCode)
+			s.Logger.Info(s.URL+":", statusCode)
 			if statusCode == 200 {
 				s.setSiteUp(s.DB)
 				time.Sleep(time.Second * 15)
@@ -75,7 +77,7 @@ func (s *Website) getStatusCode() int {
 
 	resp, err := http.Get(s.URL)
 	if err != nil {
-		log.Println(err.Error())
+		s.Logger.Error(err.Error())
 		return 500
 	}
 
@@ -91,11 +93,11 @@ func (s *Website) setSiteUp(dbConn *storage.Connection) {
 	sql := "UPDATE sites SET last_checked = ?, is_up = ? WHERE url = ?"
 	statement, err := dbConn.DB.Prepare(sql)
 	if err != nil {
-		fmt.Println(err)
+		s.Logger.Error(err)
 	}
 	_, err = statement.Exec(time.Now().Format("2006-01-02 15:04:05"), 1, s.URL)
 	if err != nil {
-		fmt.Println(err)
+		s.Logger.Error(err)
 	}
 	statement.Close()
 }
@@ -108,19 +110,20 @@ func (s *Website) setSiteDown(dbConn *storage.Connection) {
 	sql := "UPDATE sites SET last_checked = ?, is_up = ? WHERE url = ?"
 	statement, err := dbConn.DB.Prepare(sql)
 	if err != nil {
-		fmt.Println(err)
+		s.Logger.Error(err)
 	}
 	_, err = statement.Exec(time.Now().Format("2006-01-02 15:04:05"), 0, s.URL)
 	if err != nil {
-		fmt.Println(err)
+		s.Logger.Error(err)
 	}
+	statement.Close()
 }
 
 func (s *Website) GetSiteID(dbConn *storage.Connection) int {
 	var siteID int
 	row, err := dbConn.DB.Query("SELECT id FROM sites WHERE url = '" + s.URL + "'")
 	if err != nil {
-		fmt.Println(err)
+		s.Logger.Error(err)
 	}
 	defer row.Close()
 	for row.Next() {
@@ -134,9 +137,26 @@ func (s *Website) beginOutage(dbConn *storage.Connection) {
 	sql := "insert into outages values (null, ?, ?, null);"
 	statement, err := dbConn.DB.Prepare(sql)
 	if err != nil {
-		fmt.Println(err)
+		s.Logger.Error(err)
 	}
 	statement.Exec(siteID, time.Now().Format("2006-01-02 15:04:05"))
+	statement.Close()
+	go func() {
+		s.Logger.Info("Sending email...")
+		m := gomail.NewMessage()
+		m.SetHeader("From", "FROM ADDRESS") // TODO: add this to env
+		m.SetHeader("To", "TO ADDRESS")     // TODO: add this to env
+		m.SetHeader("Subject", s.URL+" is down!")
+		m.SetBody("text/html", "<h1>"+s.URL+" is down!</h1><p>Better go check things out...</p>")
+
+		d := gomail.NewDialer("SMTP HOST", // TODO: add this to env
+			587,
+			"SMTP USER", // TODO: add this to env
+			"SMTP PASS") // TODO: add this to env
+		if err := d.DialAndSend(m); err != nil {
+			s.Logger.Error(err)
+		}
+	}()
 }
 
 func (s *Website) endOutage(dbConn *storage.Connection) {
@@ -144,17 +164,33 @@ func (s *Website) endOutage(dbConn *storage.Connection) {
 	sql := "update outages set outage_end = ? where website_id = ? and outage_end is null"
 	statement, err := dbConn.DB.Prepare(sql)
 	if err != nil {
-		fmt.Println(err)
+		s.Logger.Error(err)
 	}
 	statement.Exec(time.Now().Format("2006-01-02 15:04:05"), siteID)
 	statement.Close()
+	go func() {
+		s.Logger.Info("Sending email...")
+		m := gomail.NewMessage()
+		m.SetHeader("From", "FROM ADDRESS") // TODO: add this to env
+		m.SetHeader("To", "TO ADDRESS")     // TODO: add this to env
+		m.SetHeader("Subject", s.URL+" is back up")
+		m.SetBody("text/html", "<h1>"+s.URL+" is back online!</h1><p>Thank god.</p>")
+
+		d := gomail.NewDialer("SMTP HOST", // TODO: add this to env
+			587,
+			"SMTP USER", // TODO: add this to env
+			"SMTP PASS") // TODO: add this to env
+		if err := d.DialAndSend(m); err != nil {
+			s.Logger.Error(err)
+		}
+	}()
 }
 
-func FindWebsiteByID(id int, dbConn *storage.Connection) (Website, error) {
+func FindWebsiteByID(id int, dbConn *storage.Connection, logger *logrus.Logger) (Website, error) {
 	s := Website{}
 	row, err := dbConn.DB.Query("SELECT id, url, is_up FROM sites WHERE id = ?", id)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 		return s, err
 	}
 	defer row.Close()
@@ -174,11 +210,11 @@ func FindWebsiteByID(id int, dbConn *storage.Connection) (Website, error) {
 }
 
 // Destroy - delete a site from the DB and close down the monitoring routine
-func (s *Website) Destroy(c *chan string, dbConn *storage.Connection) {
+func (s *Website) Destroy(c *chan string, dbConn *storage.Connection, logger *logrus.Logger) {
 	sql := "UPDATE sites SET is_deleted = ? WHERE id = ?"
 	statement, err := dbConn.DB.Prepare(sql)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err)
 	}
 	statement.Exec(1, s.ID)
 	statement.Close()

@@ -12,4 +12,4 @@ go build -o ../dist/ofc-uptime
 cd ..
 
 echo "Starting new built binary"
-dist/ofc-uptime &
+dist/ofc-uptime > log &

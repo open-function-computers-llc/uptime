@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -23,12 +22,11 @@ type Server struct {
 }
 
 // Bootstrap - share a pointer to a SQL DB storage struct with this server
-func (s *Server) Bootstrap(dbConn *storage.Connection) {
+func (s *Server) Bootstrap(dbConn *storage.Connection, logger *logrus.Logger) {
 	s.storage = dbConn
 
 	// set up logging
-	s.logger = logrus.New()
-	s.logger.SetOutput(os.Stdout)
+	s.logger = logger
 
 	// set app configuration
 	s.processConfiguration()

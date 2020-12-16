@@ -15,12 +15,12 @@ func (s *Server) handleRemoveSite() http.HandlerFunc {
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
-		site, err := site.FindWebsiteByID(siteID, s.storage)
+		site, err := site.FindWebsiteByID(siteID, s.storage, s.logger)
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
 		s.log(site)
-		site.Destroy(s.shutdownChannel, s.storage)
+		site.Destroy(s.shutdownChannel, s.storage, s.logger)
 
 		http.Redirect(w, r, "/", 302)
 	}

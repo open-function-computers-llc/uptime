@@ -10,7 +10,7 @@ func (s *Server) handleStoreSite() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		url := r.Form.Get("url")
-		site := site.Create(url, s.storage)
+		site := site.Create(url, s.storage, s.logger)
 		site.Monitor(*s.shutdownChannel)
 		http.Redirect(w, r, "/", 302)
 	}
