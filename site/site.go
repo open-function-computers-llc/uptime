@@ -43,6 +43,8 @@ func Create(address string, dbConn *storage.Connection, logger *logrus.Logger) W
 // Monitor - periodically make an HTTP GET request to the site's URL, and optionally log it in the database
 func (s *Website) Monitor(shutdownChan chan string) {
 	go func() {
+		secondsDown := 0
+
 		for {
 			select {
 			case msg := <-shutdownChan:
@@ -59,15 +61,19 @@ func (s *Website) Monitor(shutdownChan chan string) {
 			}
 
 			statusCode := s.getStatusCode()
-			s.Logger.Info(s.URL+":", statusCode)
+			// s.Logger.Info(s.URL+":", statusCode)
 			if statusCode == 200 {
-				s.setSiteUp(s.DB)
+				s.setSiteUp(s.DB, secondsDown)
+
+				secondsDown = 0
+
 				time.Sleep(time.Second * 15)
 				continue
 			}
 
-			s.setSiteDown(s.DB)
+			s.setSiteDown(s.DB, secondsDown)
 			time.Sleep(time.Second * 1)
+			secondsDown += 1
 		}
 	}()
 }
@@ -87,9 +93,9 @@ func (s *Website) getStatusCode() int {
 	return resp.StatusCode
 }
 
-func (s *Website) setSiteUp(dbConn *storage.Connection) {
+func (s *Website) setSiteUp(dbConn *storage.Connection, secondsDown int) {
 	if !s.IsUp {
-		s.endOutage(dbConn)
+		s.endOutage(dbConn, secondsDown)
 	}
 	s.IsUp = true
 
@@ -105,7 +111,7 @@ func (s *Website) setSiteUp(dbConn *storage.Connection) {
 	statement.Close()
 }
 
-func (s *Website) setSiteDown(dbConn *storage.Connection) {
+func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 	if s.IsUp {
 		s.beginOutage(dbConn)
 	}
@@ -120,6 +126,60 @@ func (s *Website) setSiteDown(dbConn *storage.Connection) {
 		s.Logger.Error(err)
 	}
 	statement.Close()
+
+	if secondsDown == 30 {
+		go func() {
+			err := checkSMTPEnv()
+			if err != nil {
+				s.Logger.Error(err.Error())
+				return
+			}
+
+			s.Logger.Info("Sending email...")
+			m := gomail.NewMessage()
+			m.SetHeader("From", os.Getenv("EMAIL_FROM"))
+			m.SetHeader("To", os.Getenv("EMAIL_TO"))
+			m.SetHeader("Subject", s.URL+" is down!")
+			m.SetBody("text/html", "<h1>"+s.URL+" is down!</h1><p>It has been down for at least "+strconv.Itoa(secondsDown)+" seconds. Better go check things out...</p>")
+
+			port := os.Getenv("SMTP_PORT")
+			portInt, _ := strconv.Atoi(port)
+			d := gomail.NewDialer(os.Getenv("SMTP_HOST"),
+				portInt,
+				os.Getenv("SMTP_USER"),
+				os.Getenv("SMTP_PASSWORD"))
+			if err := d.DialAndSend(m); err != nil {
+				s.Logger.Error(err)
+			}
+		}()
+	}
+
+	if secondsDown == 180 {
+		go func() {
+			err := checkSMTPEnv()
+			if err != nil {
+				s.Logger.Error(err.Error())
+				return
+			}
+
+			s.Logger.Info("Sending email...")
+			m := gomail.NewMessage()
+			m.SetHeader("From", os.Getenv("EMAIL_FROM"))
+			m.SetHeader("To", os.Getenv("EMAIL_TO"))
+			m.SetHeader("Subject", "OFCO.911 - "+s.URL+" is down!")
+			m.SetBody("text/html", "<h1>"+s.URL+" is down!</h1><p>It has been down for at least "+strconv.Itoa(secondsDown)+" seconds. Better go check things out...</p>")
+
+			port := os.Getenv("SMTP_PORT")
+			portInt, _ := strconv.Atoi(port)
+			d := gomail.NewDialer(os.Getenv("SMTP_HOST"),
+				portInt,
+				os.Getenv("SMTP_USER"),
+				os.Getenv("SMTP_PASSWORD"))
+			if err := d.DialAndSend(m); err != nil {
+				s.Logger.Error(err)
+			}
+		}()
+	}
 }
 
 // GetSiteID - the the ID of the current website by it's URL
@@ -148,34 +208,9 @@ func (s *Website) beginOutage(dbConn *storage.Connection) {
 		s.Logger.Error(err)
 	}
 	statement.Close()
-	go func() {
-		err := checkSMTPEnv()
-		if err != nil {
-			s.Logger.Error(s.URL + " is down!")
-			s.Logger.Error(err.Error())
-			return
-		}
-
-		s.Logger.Info("Sending email...")
-		m := gomail.NewMessage()
-		m.SetHeader("From", os.Getenv("EMAIL_FROM"))
-		m.SetHeader("To", os.Getenv("EMAIL_TO"))
-		m.SetHeader("Subject", s.URL+" is down!")
-		m.SetBody("text/html", "<h1>"+s.URL+" is down!</h1><p>Better go check things out...</p>")
-
-		port := os.Getenv("SMTP_PORT")
-		portInt, _ := strconv.Atoi(port)
-		d := gomail.NewDialer(os.Getenv("SMTP_HOST"),
-			portInt,
-			os.Getenv("SMTP_USER"),
-			os.Getenv("SMTP_PASSWORD"))
-		if err := d.DialAndSend(m); err != nil {
-			s.Logger.Error(err)
-		}
-	}()
 }
 
-func (s *Website) endOutage(dbConn *storage.Connection) {
+func (s *Website) endOutage(dbConn *storage.Connection, secondsDown int) {
 	siteID := s.GetSiteID(dbConn)
 	sql := "update outages set outage_end = ? where website_id = ? and outage_end = '0000-00-00 00:00:00'"
 	statement, err := dbConn.DB.Prepare(sql)
@@ -197,7 +232,7 @@ func (s *Website) endOutage(dbConn *storage.Connection) {
 		m.SetHeader("From", os.Getenv("EMAIL_FROM"))
 		m.SetHeader("To", os.Getenv("EMAIL_TO"))
 		m.SetHeader("Subject", s.URL+" is back up")
-		m.SetBody("text/html", "<h1>"+s.URL+" is back online!</h1><p>Thank god.</p>")
+		m.SetBody("text/html", "<h1>"+s.URL+" is back online!</h1><p>It was down for "+strconv.Itoa(secondsDown)+" seconds.</p>")
 
 		port := os.Getenv("SMTP_PORT")
 		portInt, _ := strconv.Atoi(port)
