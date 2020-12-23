@@ -219,31 +219,34 @@ func (s *Website) endOutage(dbConn *storage.Connection, secondsDown int) {
 	}
 	statement.Exec(time.Now().Format("2006-01-02 15:04:05"), siteID)
 	statement.Close()
-	go func() {
-		err := checkSMTPEnv()
-		if err != nil {
-			s.Logger.Error(s.URL + " is back up")
-			s.Logger.Error(err.Error())
-			return
-		}
 
-		s.Logger.Info("Sending email...")
-		m := gomail.NewMessage()
-		m.SetHeader("From", os.Getenv("EMAIL_FROM"))
-		m.SetHeader("To", os.Getenv("EMAIL_TO"))
-		m.SetHeader("Subject", s.URL+" is back up")
-		m.SetBody("text/html", "<h1>"+s.URL+" is back online!</h1><p>It was down for "+strconv.Itoa(secondsDown)+" seconds.</p>")
+	if secondsDown >= 30 {
+		go func() {
+			err := checkSMTPEnv()
+			if err != nil {
+				s.Logger.Error(s.URL + " is back up")
+				s.Logger.Error(err.Error())
+				return
+			}
 
-		port := os.Getenv("SMTP_PORT")
-		portInt, _ := strconv.Atoi(port)
-		d := gomail.NewDialer(os.Getenv("SMTP_HOST"),
-			portInt,
-			os.Getenv("SMTP_USER"),
-			os.Getenv("SMTP_PASSWORD"))
-		if err := d.DialAndSend(m); err != nil {
-			s.Logger.Error(err)
-		}
-	}()
+			s.Logger.Info("Sending email...")
+			m := gomail.NewMessage()
+			m.SetHeader("From", os.Getenv("EMAIL_FROM"))
+			m.SetHeader("To", os.Getenv("EMAIL_TO"))
+			m.SetHeader("Subject", s.URL+" is back up")
+			m.SetBody("text/html", "<h1>"+s.URL+" is back online!</h1><p>It was down for "+strconv.Itoa(secondsDown)+" seconds.</p>")
+
+			port := os.Getenv("SMTP_PORT")
+			portInt, _ := strconv.Atoi(port)
+			d := gomail.NewDialer(os.Getenv("SMTP_HOST"),
+				portInt,
+				os.Getenv("SMTP_USER"),
+				os.Getenv("SMTP_PASSWORD"))
+			if err := d.DialAndSend(m); err != nil {
+				s.Logger.Error(err)
+			}
+		}()
+	}
 }
 
 // FindWebsiteByID - Find a site in the DB by it's ID

@@ -33,11 +33,26 @@ func (s *Website) Outages(dbConn *storage.Connection) []Outage {
 
 		outage.Start, _ = time.Parse(layout, start)
 		outage.End, _ = time.Parse(layout, end)
-		if !outage.End.IsZero() {
-			outage.Duration = outage.End.Sub(outage.Start).Seconds()
+		if outage.End.IsZero() {
+			outage.End = time.Now()
 		}
+		outage.Duration = outage.End.Sub(outage.Start).Seconds()
 
 		outages = append(outages, outage)
 	}
 	return outages
+}
+
+// CloseOutPreviousOutages - run this to set any lingering outages to be closed
+func CloseOutPreviousOutages(dbConn *storage.Connection) error {
+	sql := "UPDATE outages SET outage_end = NOW() where outage_end = '0000-00-00 00:00:00'"
+
+	statement, err := dbConn.DB.Prepare(sql)
+	if err != nil {
+		return err
+	}
+
+	_, err = statement.Exec()
+	statement.Close()
+	return err
 }

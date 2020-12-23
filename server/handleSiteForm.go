@@ -13,8 +13,8 @@ func (s *Server) handleSiteForm() http.HandlerFunc {
 	<input type="text" name="url" placeholder="https://openfunctioncomputers.com" />
 	<input type="submit" value="Add" />
 </form>
-<a href="/">Cancel</a>
+<a class='button' href="/">Cancel</a>
 		`
-		io.WriteString(w, html)
+		io.WriteString(w, html+extraHTML)
 	}
 }

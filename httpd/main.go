@@ -33,6 +33,10 @@ func main() {
 		Logger: logger,
 	}
 
+	err = site.CloseOutPreviousOutages(&appStorage)
+	if err != nil {
+		log.Fatal(err)
+	}
 	existingSites := site.GetSites(&appStorage)
 
 	shutDownChannel := make(chan string)

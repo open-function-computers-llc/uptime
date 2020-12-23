@@ -10,12 +10,14 @@ import (
 func GetSites(dbConn *storage.Connection) map[int]Website {
 	sites := map[int]Website{}
 
-	row, err := dbConn.DB.Query("SELECT id, url, is_up FROM sites WHERE is_deleted = 0")
+	row, err := dbConn.DB.Query("SELECT id, url, is_up FROM sites WHERE is_deleted = 0 ORDER BY is_up, REPLACE(REPLACE(REPLACE(url, \"http://\", \"\"), \"https://\", \"\"), \"www.\", \"\")")
 	if err != nil {
 		fmt.Println(err)
 		return sites
 	}
 	defer row.Close()
+
+	index := 0
 	for row.Next() {
 		var id int
 		var url string
@@ -26,7 +28,9 @@ func GetSites(dbConn *storage.Connection) map[int]Website {
 			ID:   id,
 			IsUp: isUp == 1,
 		}
-		sites[id] = site
+		fmt.Println(site)
+		sites[index] = site
+		index++
 	}
 	return sites
 }
