@@ -28,7 +28,6 @@ func GetSites(dbConn *storage.Connection) map[int]Website {
 			ID:   id,
 			IsUp: isUp == 1,
 		}
-		fmt.Println(site)
 		sites[index] = site
 		index++
 	}

@@ -83,7 +83,15 @@ func (s *Website) getStatusCode() int {
 		return 404
 	}
 
-	resp, err := http.Get(s.URL)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", s.URL, nil)
+	if err != nil {
+		s.Logger.Error(err.Error())
+		return 500
+	}
+	req.Header.Set("User-Agent", "OFC_Uptime_Bot-version:"+os.Getenv("VERSION"))
+
+	resp, err := client.Do(req)
 	if err != nil {
 		s.Logger.Error(err.Error())
 		return 500
