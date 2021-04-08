@@ -26,7 +26,7 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
 
-		w.Header().Set("Content-Type", "application/json")
+		certData, _ := site.GetCertificateInfo()
 		data := map[string]interface{}{
 			"url":     site.URL,
 			"up":      site.IsUp,
@@ -38,8 +38,10 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 				"days60": site.CalcUptime(60, s.storage),
 				"days90": site.CalcUptime(90, s.storage),
 			},
+			"certInfo": certData,
 		}
 		dataJSON, _ := json.Marshal(data)
+		w.Header().Set("Content-Type", "application/json")
 		w.Write(dataJSON)
 	}
 }

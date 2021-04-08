@@ -371,3 +371,15 @@ func (s *Website) Restore(dbConn *storage.Connection, logger *logrus.Logger) {
 	logger.Info("Restored Website:", s.URL)
 	statement.Close()
 }
+
+func (s *Website) getDomain() string {
+	domain := strings.Replace(s.URL, "http://www.", "", 1)
+	domain = strings.Replace(domain, "https://www.", "", 1)
+	domain = strings.Replace(domain, "http://", "", 1)
+	domain = strings.Replace(domain, "https://", "", 1)
+
+	if domain[len(domain)-1:] == "/" {
+		domain = domain[:len(domain)-1]
+	}
+	return domain
+}
