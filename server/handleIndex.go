@@ -34,7 +34,7 @@ func (s *Server) handleIndex() http.HandlerFunc {
 			output += "<li class='" + class + "'><p>" + site.URL + ": " + status + "</p>"
 			output += "<span> <a class='button' href='/details?url=" + site.URL + "'>Details</a> <a class='button' href='/remove/" + strconv.Itoa(site.ID) + "'>Delete</a></span></li>"
 		}
-		output += "</ul>" + buttonHTML + extraHTML
-		io.WriteString(w, output)
+		output += "</ul>" + buttonHTML
+		io.WriteString(w, htmlWrap(output))
 	}
 }

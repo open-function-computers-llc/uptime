@@ -29,7 +29,7 @@ func (s *Server) handleDeleted() http.HandlerFunc {
 		if len(keys) == 0 {
 			output += "<li><p>No deleted sites.</p></li>"
 		}
-		output += "</ul>" + buttonHTML + extraHTML
-		io.WriteString(w, output)
+		output += "</ul>" + buttonHTML
+		io.WriteString(w, htmlWrap(output))
 	}
 }

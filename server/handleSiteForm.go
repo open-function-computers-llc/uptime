@@ -7,7 +7,7 @@ import (
 
 func (s *Server) handleSiteForm() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		html := `
+		form := `
 <h1>Add a URL</h1>
 <form action="/store" method="POST">
 	<input type="text" name="url" placeholder="https://openfunctioncomputers.com" />
@@ -15,6 +15,6 @@ func (s *Server) handleSiteForm() http.HandlerFunc {
 </form>
 <a class='button' href="/">Cancel</a>
 		`
-		io.WriteString(w, html+extraHTML)
+		io.WriteString(w, htmlWrap(form))
 	}
 }

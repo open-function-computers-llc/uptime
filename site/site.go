@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/open-function-computers-llc/uptime/storage"
@@ -14,11 +15,13 @@ import (
 
 // Website - a site that we will be checking
 type Website struct {
-	ID     int
-	URL    string
-	IsUp   bool
-	DB     *storage.Connection
-	Logger *logrus.Logger
+	ID                   int
+	URL                  string
+	IsUp                 bool
+	DB                   *storage.Connection
+	Logger               *logrus.Logger
+	standardWarningSent  bool
+	emergencyWarningSent bool
 }
 
 // Create - Make a new instance of a Website struct
@@ -62,7 +65,14 @@ func (s *Website) Monitor(shutdownChan *chan string) {
 			}
 
 			statusCode := s.getStatusCode()
-			s.Logger.Info(s.URL+":", statusCode)
+			// s.Logger.Info(s.URL+":", statusCode)
+			if statusCode < 199 {
+				// fake status code returned because of slow response
+				secondsDown += statusCode
+				s.setSiteDown(s.DB, secondsDown)
+				time.Sleep(time.Second * 1)
+				continue
+			}
 			if statusCode == 200 {
 				s.setSiteUp(s.DB, secondsDown)
 
@@ -83,10 +93,17 @@ func (s *Website) getStatusCode() int {
 	if s.URL == "" {
 		return 404
 	}
+	timeoutSeconds := 5
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: time.Duration(timeoutSeconds) * time.Second,
+	}
 	req, err := http.NewRequest("GET", s.URL, nil)
 	if err != nil {
+		if strings.HasSuffix(err.Error(), "(Client.Timeout exceeded while awaiting headers)") {
+			// s.Logger.Error(s.URL + " took too long to respond, and the URL was different!")
+			return timeoutSeconds
+		}
 		s.Logger.Error(err.Error())
 		return 500
 	}
@@ -94,6 +111,10 @@ func (s *Website) getStatusCode() int {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		if strings.HasSuffix(err.Error(), "(Client.Timeout exceeded while awaiting headers)") {
+			// s.Logger.Error(s.URL + " took too long to respond!")
+			return timeoutSeconds
+		}
 		s.Logger.Error(err.Error())
 		return 500
 	}
@@ -107,6 +128,8 @@ func (s *Website) setSiteUp(dbConn *storage.Connection, secondsDown int) {
 		s.endOutage(dbConn, secondsDown)
 	}
 	s.IsUp = true
+	s.emergencyWarningSent = false
+	s.standardWarningSent = false
 
 	sql := "UPDATE sites SET last_checked = ?, is_up = ? WHERE url = ?"
 	statement, err := dbConn.DB.Prepare(sql)
@@ -136,7 +159,9 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 	}
 	statement.Close()
 
-	if secondsDown == 30 {
+	s.Logger.Info(s.URL + " has been down for at least " + strconv.Itoa(secondsDown) + " second(s)")
+
+	if secondsDown >= 30 && !s.standardWarningSent {
 		go func() {
 			err := checkSMTPEnv()
 			if err != nil {
@@ -144,7 +169,7 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 				return
 			}
 
-			s.Logger.Info("Sending email...")
+			s.Logger.Info("Sending standard down email for " + s.URL)
 			m := gomail.NewMessage()
 			m.SetHeader("From", os.Getenv("EMAIL_FROM"))
 			m.SetHeader("To", os.Getenv("EMAIL_TO"))
@@ -160,10 +185,11 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 			if err := d.DialAndSend(m); err != nil {
 				s.Logger.Error(err)
 			}
+			s.standardWarningSent = true
 		}()
 	}
 
-	if secondsDown == 180 {
+	if secondsDown >= 180 && !s.emergencyWarningSent {
 		go func() {
 			err := checkSMTPEnv()
 			if err != nil {
@@ -171,7 +197,7 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 				return
 			}
 
-			s.Logger.Info("Sending email...")
+			s.Logger.Info("Sending emergency down email for " + s.URL)
 			m := gomail.NewMessage()
 			m.SetHeader("From", os.Getenv("EMAIL_FROM"))
 			m.SetHeader("To", os.Getenv("EMAIL_TO"))
@@ -187,6 +213,7 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 			if err := d.DialAndSend(m); err != nil {
 				s.Logger.Error(err)
 			}
+			s.emergencyWarningSent = true
 		}()
 	}
 }
@@ -229,16 +256,17 @@ func (s *Website) endOutage(dbConn *storage.Connection, secondsDown int) {
 	statement.Exec(time.Now().Format("2006-01-02 15:04:05"), siteID)
 	statement.Close()
 
+	s.Logger.Info(s.URL + " is back up")
+
 	if secondsDown >= 30 {
 		go func() {
 			err := checkSMTPEnv()
 			if err != nil {
-				s.Logger.Error(s.URL + " is back up")
 				s.Logger.Error(err.Error())
 				return
 			}
 
-			s.Logger.Info("Sending email...")
+			s.Logger.Info("Sending website up email for " + s.URL)
 			m := gomail.NewMessage()
 			m.SetHeader("From", os.Getenv("EMAIL_FROM"))
 			m.SetHeader("To", os.Getenv("EMAIL_TO"))
