@@ -17,6 +17,12 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 		}
 		site, err := site.FindWebsiteByURL(siteURL, s.storage, s.logger)
 		if err != nil {
+			if err.Error() == "Site was not found when looping over DB records" {
+				w.WriteHeader(404)
+				w.Header().Add("Content-type", "application/json")
+				w.Write([]byte("{\"error\":\"not found\"}"))
+				return
+			}
 			http.Redirect(w, r, "/?error=not valid", 302)
 		}
 

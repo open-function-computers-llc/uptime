@@ -17,6 +17,7 @@ li {
     justify-content: space-between;
 	align-items: center;
 	padding: 0 5px;
+    background: lightgray;
 }
 
 li.online {

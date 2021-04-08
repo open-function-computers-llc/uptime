@@ -22,11 +22,14 @@ type Server struct {
 }
 
 // Bootstrap - share a pointer to a SQL DB storage struct with this server
-func (s *Server) Bootstrap(dbConn *storage.Connection, logger *logrus.Logger) {
+func (s *Server) Bootstrap(dbConn *storage.Connection, logger *logrus.Logger, shutdownChan *chan string) {
 	s.storage = dbConn
 
 	// set up logging
 	s.logger = logger
+
+	// set up the communication channel
+	s.shutdownChannel = shutdownChan
 
 	// set app configuration
 	s.processConfiguration()
@@ -41,11 +44,6 @@ func Create() Server {
 	s := Server{}
 
 	return s
-}
-
-// SetChannel - set the broadcast channel to destroy site monitors
-func (s *Server) SetChannel(c *chan string) {
-	s.shutdownChannel = c
 }
 
 // Serve will start up the http server

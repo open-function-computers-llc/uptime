@@ -1,6 +1,7 @@
 package site
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"strconv"
@@ -41,27 +42,27 @@ func Create(address string, dbConn *storage.Connection, logger *logrus.Logger) W
 }
 
 // Monitor - periodically make an HTTP GET request to the site's URL, and optionally log it in the database
-func (s *Website) Monitor(shutdownChan chan string) {
+func (s *Website) Monitor(shutdownChan *chan string) {
 	go func() {
 		secondsDown := 0
 
 		for {
 			select {
-			case msg := <-shutdownChan:
+			case msg := <-*shutdownChan:
 				if msg == s.URL {
 					s.Logger.Info("Shutting down monitor for " + s.URL)
 					return
 				}
 
 				s.Logger.Info("Site: " + s.URL + "passing url back to channel " + msg)
-				shutdownChan <- msg
+				*shutdownChan <- msg
 			default:
 				// nothing to do as the default, this is just here so that the
 				// channel checking is non-blocking
 			}
 
 			statusCode := s.getStatusCode()
-			// s.Logger.Info(s.URL+":", statusCode)
+			s.Logger.Info(s.URL+":", statusCode)
 			if statusCode == 200 {
 				s.setSiteUp(s.DB, secondsDown)
 
@@ -302,7 +303,7 @@ func FindWebsiteByURL(url string, dbConn *storage.Connection, logger *logrus.Log
 		}
 		return site, nil
 	}
-	return s, nil
+	return s, errors.New("Site was not found when looping over DB records")
 }
 
 // Destroy - delete a site from the DB and close down the monitoring routine
@@ -317,4 +318,28 @@ func (s *Website) Destroy(c *chan string, dbConn *storage.Connection, logger *lo
 	go func() {
 		*c <- s.URL
 	}()
+}
+
+// Purge - delete a site from the DB and close down the monitoring routine
+func (s *Website) Purge(dbConn *storage.Connection, logger *logrus.Logger) {
+	sql := "DELETE FROM sites WHERE id = ?"
+	statement, err := dbConn.DB.Prepare(sql)
+	if err != nil {
+		logger.Error(err)
+	}
+	statement.Exec(s.ID)
+	statement.Close()
+}
+
+// Destroy - delete a site from the DB and close down the monitoring routine
+func (s *Website) Restore(dbConn *storage.Connection, logger *logrus.Logger) {
+	sql := "UPDATE sites SET is_deleted = ? WHERE id = ?"
+	statement, err := dbConn.DB.Prepare(sql)
+	if err != nil {
+		logger.Error(err)
+	}
+	s.Logger = logger
+	statement.Exec(0, s.ID)
+	logger.Info("Restored Website:", s.URL)
+	statement.Close()
 }

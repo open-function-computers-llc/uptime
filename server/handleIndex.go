@@ -11,6 +11,7 @@ import (
 
 func (s *Server) handleIndex() http.HandlerFunc {
 	buttonHTML := "<a class='button' href='/add'>Add Site</a>"
+	buttonHTML += "<a class='button' href='/deleted'>Show Deleted Sites</a>"
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		sites := site.GetSites(s.storage)

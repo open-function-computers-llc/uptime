@@ -43,11 +43,10 @@ func main() {
 
 	for _, existingSite := range existingSites {
 		site := site.Create(existingSite.URL, &appStorage, logger)
-		site.Monitor(shutDownChannel)
+		site.Monitor(&shutDownChannel)
 	}
 
 	server := server.Create()
-	server.Bootstrap(&appStorage, logger)
-	server.SetChannel(&shutDownChannel)
+	server.Bootstrap(&appStorage, logger, &shutDownChannel)
 	server.Serve()
 }
