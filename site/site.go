@@ -64,16 +64,16 @@ func (s *Website) Monitor(shutdownChan *chan string) {
 				// channel checking is non-blocking
 			}
 
-			statusCode := s.getStatusCode()
+			statusCodeOrTimeoutValue := s.getStatusCode()
 			// s.Logger.Info(s.URL+":", statusCode)
-			if statusCode < 199 {
+			if statusCodeOrTimeoutValue <= 99 {
 				// fake status code returned because of slow response
-				secondsDown += statusCode
+				secondsDown += statusCodeOrTimeoutValue
 				s.setSiteDown(s.DB, secondsDown)
 				time.Sleep(time.Second * 1)
 				continue
 			}
-			if statusCode == 200 {
+			if statusCodeOrTimeoutValue == 200 {
 				s.setSiteUp(s.DB, secondsDown)
 
 				secondsDown = 0
