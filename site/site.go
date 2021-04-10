@@ -70,7 +70,9 @@ func (s *Website) Monitor(shutdownChan *chan string) {
 				// fake status code returned because of slow response
 				secondsDown += statusCodeOrTimeoutValue
 				s.setSiteDown(s.DB, secondsDown)
-				time.Sleep(time.Second * 1)
+
+				secondsDown += 5
+				time.Sleep(time.Second * 5) // wait 5 seconds and try again
 				continue
 			}
 			if statusCodeOrTimeoutValue == 200 {
@@ -78,13 +80,15 @@ func (s *Website) Monitor(shutdownChan *chan string) {
 
 				secondsDown = 0
 
-				time.Sleep(time.Second * 15)
+				time.Sleep(time.Second * 30) // wait 30 seconds and try again
 				continue
 			}
 
 			s.setSiteDown(s.DB, secondsDown)
-			time.Sleep(time.Second * 1)
-			secondsDown += 1
+
+			// wait 5 seconds and try again
+			time.Sleep(time.Second * 5)
+			secondsDown += 5
 		}
 	}()
 }
@@ -161,7 +165,7 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 
 	s.Logger.Info(s.URL + " has been down for at least " + strconv.Itoa(secondsDown) + " second(s)")
 
-	if secondsDown >= 30 && !s.standardWarningSent {
+	if secondsDown >= 60 && !s.standardWarningSent {
 		go func() {
 			err := checkSMTPEnv()
 			if err != nil {
