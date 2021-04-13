@@ -97,7 +97,7 @@ func (s *Website) getStatusCode() int {
 	if s.URL == "" {
 		return 404
 	}
-	timeoutSeconds := 5
+	timeoutSeconds := 10
 
 	client := &http.Client{
 		Timeout: time.Duration(timeoutSeconds) * time.Second,
