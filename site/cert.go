@@ -17,14 +17,14 @@ func (s *Website) GetCertificateInfo() (CertificateInfo, error) {
 	info := CertificateInfo{
 		Names: []string{},
 	}
-	conn, err := tls.Dial("tcp", s.getDomain()+":443", nil)
+	conn, err := tls.Dial("tcp", s.GetDomain()+":443", nil)
 	if err != nil {
 		fmt.Println(err)
 		return info, err
 	}
 	defer conn.Close()
 
-	err = conn.VerifyHostname(s.getDomain())
+	err = conn.VerifyHostname(s.GetDomain())
 	if err != nil {
 		info.Valid = false
 		info.Info = "Hostname doesn't match site URL: " + err.Error()

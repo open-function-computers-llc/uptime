@@ -27,10 +27,13 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 		}
 
 		certData, _ := site.GetCertificateInfo()
+		domainData, _ := site.GetDomainInfo()
+
 		data := map[string]interface{}{
-			"url":     site.URL,
-			"up":      site.IsUp,
-			"outages": site.Outages(s.storage),
+			"url":        site.URL,
+			"domainInfo": domainData,
+			"up":         site.IsUp,
+			"outages":    site.Outages(s.storage),
 			"uptime": map[string]interface{}{
 				"days1":  site.CalcUptime(1, s.storage),
 				"days7":  site.CalcUptime(7, s.storage),
