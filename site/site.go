@@ -317,7 +317,7 @@ func FindWebsiteByID(id int, dbConn *storage.Connection, logger *logrus.Logger) 
 // FindWebsiteByURL - Find a site in the DB by it's URL
 func FindWebsiteByURL(url string, dbConn *storage.Connection, logger *logrus.Logger) (Website, error) {
 	s := Website{}
-	row, err := dbConn.DB.Query("SELECT id, url, is_up FROM sites WHERE url = ?", url)
+	row, err := dbConn.DB.Query("SELECT id, url, is_up FROM sites WHERE url like ?", "%"+url+"%")
 	if err != nil {
 		logger.Error(err)
 		return s, err
