@@ -103,6 +103,7 @@ func (s *Website) getStatusCode() int {
 		Timeout: time.Duration(timeoutSeconds) * time.Second,
 	}
 	req, err := http.NewRequest("GET", s.URL, nil)
+	// TODO: this error checking is all wrong... oops!
 	if err != nil {
 		if strings.HasSuffix(err.Error(), "(Client.Timeout exceeded while awaiting headers)") {
 			// s.Logger.Error(s.URL + " took too long to respond, and the URL was different!")

@@ -11,6 +11,8 @@ github.com/likexian/whois v1.12.1 h1:NtMReNHi6IFhiTlipkgXGQq+OGAFwbJPVbQnzoLeAmA
 github.com/likexian/whois v1.12.1/go.mod h1:x2D4hARtz/E39xOgwDlJ/1k02+kxp87NeCHFyijSOUg=
 github.com/likexian/whois-parser v1.20.3 h1:jo/YiElaowYC5rwbU5V41GGDrfaUM1kGmHCxQK8lzOk=
 github.com/likexian/whois-parser v1.20.3/go.mod h1:+WnlYZfcIqRs4eyf2kkk3QugBL25dKRx7N8/RrRe8jg=
+github.com/likexian/whois-parser v1.20.4 h1:QBi8gzYH6wWfjaxVq3AcfteSsmvTc6Dseq8joB6nvZ8=
+github.com/likexian/whois-parser v1.20.4/go.mod h1:+WnlYZfcIqRs4eyf2kkk3QugBL25dKRx7N8/RrRe8jg=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/rs/cors v1.7.0 h1:+88SsELBHx5r+hZ8TCkggzSstaWNbDvThkVK8H6f9ik=
 github.com/rs/cors v1.7.0/go.mod h1:gFx+x8UowdsKA9AchylcLynDq+nNFfI8FkUZdN/jGCU=

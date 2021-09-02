@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.3.0
 	github.com/likexian/whois v1.12.1
-	github.com/likexian/whois-parser v1.20.3
+	github.com/likexian/whois-parser v1.20.4
 	github.com/rs/cors v1.7.0
 	github.com/sirupsen/logrus v1.8.1
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
