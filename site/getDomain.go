@@ -7,15 +7,35 @@ import (
 	whoisparser "github.com/likexian/whois-parser"
 )
 
-func (s *Website) GetDomain() string {
-	domain := strings.Replace(s.URL, "http://www.", "", 1)
-	domain = strings.Replace(domain, "https://www.", "", 1)
-	domain = strings.Replace(domain, "http://", "", 1)
+func (s *Website) GetAddressWithoutProtocol() string {
+	domain := strings.Replace(s.URL, "http://", "", 1)
 	domain = strings.Replace(domain, "https://", "", 1)
 
 	if domain[len(domain)-1:] == "/" {
 		domain = domain[:len(domain)-1]
 	}
+
+	parts := strings.Split(domain, ".")
+	if len(parts) > 2 {
+		return strings.Join(parts[len(parts)-2:], ".")
+	}
+
+	return domain
+}
+
+func (s *Website) GetDomain() string {
+	domain := strings.Replace(s.URL, "http://", "", 1)
+	domain = strings.Replace(domain, "https://", "", 1)
+
+	if domain[len(domain)-1:] == "/" {
+		domain = domain[:len(domain)-1]
+	}
+
+	parts := strings.Split(domain, ".")
+	if len(parts) > 2 {
+		return strings.Join(parts[len(parts)-2:], ".")
+	}
+
 	return domain
 }
 

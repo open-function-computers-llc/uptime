@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/open-function-computers-llc/uptime/notifications"
 	"github.com/open-function-computers-llc/uptime/storage"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/gomail.v2"
@@ -22,6 +23,7 @@ type Website struct {
 	Logger               *logrus.Logger
 	standardWarningSent  bool
 	emergencyWarningSent bool
+	logLevel             string
 }
 
 // Create - Make a new instance of a Website struct
@@ -195,6 +197,7 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 	}
 
 	if secondsDown >= 180 && !s.emergencyWarningSent {
+		go notifications.SendHTTPRequest(s.URL)
 		go func() {
 			err := checkSMTPEnv()
 			if err != nil {

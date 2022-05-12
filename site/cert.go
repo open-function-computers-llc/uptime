@@ -24,7 +24,7 @@ func (s *Website) GetCertificateInfo() (CertificateInfo, error) {
 	}
 	defer conn.Close()
 
-	err = conn.VerifyHostname(s.GetDomain())
+	err = conn.VerifyHostname(s.GetAddressWithoutProtocol())
 	if err != nil {
 		info.Valid = false
 		info.Info = "Hostname doesn't match site URL: " + err.Error()
