@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 
 func (s *Server) handleRestoreSite() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("server", s.storage)
 		vars := mux.Vars(r)
 		siteID, err := strconv.Atoi(vars["id"])
 		if err != nil {
