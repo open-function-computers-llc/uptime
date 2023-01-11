@@ -21,15 +21,19 @@ body {
 ul {
 	list-style-type: none;
     padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
 li {
-	margin-bottom: 10px;
     display: flex;
+    flex-direction: column;
     justify-content: space-between;
-	align-items: center;
-	padding: 0 5px;
+	align-items: flex-start;
+	padding: 0 15px 15px;
     background: lightgray;
+    width: 300px;
 }
 
 li.online {
@@ -49,6 +53,10 @@ a.button {
     background: white;
     margin-left: 5px;
     text-transform: uppercase;
+}
+
+a.button:first-of-type {
+    margin-left: 0;
 }
 
 li span a:hover {
