@@ -1,7 +1,6 @@
 package server
 
 import (
-	"io"
 	"net/http"
 	"sort"
 	"strconv"
@@ -44,6 +43,14 @@ func (s *Server) handleIndex() http.HandlerFunc {
 			output += "<span> <a class='button' href='/details?url=" + site.URL + "'>Details</a> <a class='button' href='/remove/" + strconv.Itoa(site.ID) + "'>Delete</a></span></li>"
 		}
 		output += "</ul>" + buttonHTML
-		io.WriteString(w, htmlWrap(output))
+
+		// used for page "refreshing"
+		isAJAX := r.URL.Query().Get("ajax")
+		if isAJAX == "true" {
+			w.Write([]byte(output))
+			return
+		}
+
+		w.Write([]byte(htmlWrap(output)))
 	}
 }
