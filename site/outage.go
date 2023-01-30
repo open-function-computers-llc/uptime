@@ -35,7 +35,7 @@ func (s *Website) endOutage(dbConn *storage.Connection, secondsDown int) {
 
 	s.Logger.Info(s.URL + " is back up")
 
-	if secondsDown >= 30 {
+	if secondsDown >= 35 {
 		go func() {
 			err := checkSMTPEnv()
 			if err != nil {
