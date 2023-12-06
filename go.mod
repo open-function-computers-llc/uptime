@@ -1,6 +1,6 @@
 module github.com/open-function-computers-llc/uptime
 
-go 1.17
+go 1.21
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0

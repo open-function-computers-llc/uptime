@@ -29,7 +29,7 @@ func (s *Website) Monitor(shutdownChan *chan string) {
 			if statusCodeOrTimeoutValue <= 99 {
 				// fake status code returned because of slow response
 				secondsDown += statusCodeOrTimeoutValue
-				s.setSiteDown(s.DB, secondsDown)
+				s.setSiteDown(s.DB, secondsDown, statusCodeOrTimeoutValue)
 
 				secondsDown += 5
 				time.Sleep(time.Second * 5) // wait 5 seconds and try again
@@ -44,7 +44,7 @@ func (s *Website) Monitor(shutdownChan *chan string) {
 				continue
 			}
 
-			s.setSiteDown(s.DB, secondsDown)
+			s.setSiteDown(s.DB, secondsDown, statusCodeOrTimeoutValue)
 
 			// wait 5 seconds and try again
 			time.Sleep(time.Second * 5)

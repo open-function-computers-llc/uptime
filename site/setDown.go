@@ -10,7 +10,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
+func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int, statusCode int) {
 	if s.IsUp {
 		s.beginOutage(dbConn)
 	}
@@ -26,7 +26,7 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int) {
 	}
 	statement.Close()
 
-	s.Logger.Info(s.URL + " has been down for at least " + strconv.Itoa(secondsDown) + " second(s)")
+	s.Logger.Info(s.URL + " has been down for at least " + strconv.Itoa(secondsDown) + " second(s), current code: " + strconv.Itoa(statusCode))
 
 	if secondsDown >= 60 && !s.standardWarningSent {
 		go func() {
