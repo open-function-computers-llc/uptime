@@ -22,7 +22,7 @@ rm dist/ofc-uptime
 
 echo "Building new binaries"
 cd httpd
-go build -o ../dist/ofc-uptime
+CGO_ENABLED=0 GODEBUG=netdns=cgo go build -o ../dist/ofc-uptime
 cd ..
 
 echo "Starting new built binary"
