@@ -2,7 +2,9 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/open-function-computers-llc/uptime/server"
@@ -39,14 +41,18 @@ func main() {
 	}
 	existingSites := site.GetSites(&appStorage)
 
+	// http client for all requests
+	httpClientTimeout := 10
+	client := &http.Client{
+		Timeout: time.Duration(httpClientTimeout) * time.Second,
+	}
 	shutDownChannel := make(chan string)
 
 	for _, existingSite := range existingSites {
-		site := site.Create(existingSite.URL, &appStorage, logger)
+		site := site.Create(existingSite.URL, &appStorage, logger, client, httpClientTimeout)
 		site.Monitor(&shutDownChannel)
 	}
 
-	server := server.Create()
-	server.Bootstrap(&appStorage, logger, &shutDownChannel)
+	server := server.Create(&appStorage, logger, &shutDownChannel, client, httpClientTimeout)
 	server.Serve()
 }

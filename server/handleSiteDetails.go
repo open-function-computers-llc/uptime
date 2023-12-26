@@ -13,7 +13,7 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 
 		siteURL := r.FormValue("url")
 		if siteURL == "" {
-			http.Redirect(w, r, "/?error=not valid", 302)
+			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
 		}
 		site, err := site.FindWebsiteByURL(siteURL, s.storage, s.logger)
 		if err != nil {
@@ -23,7 +23,7 @@ func (s *Server) handleSiteDetails() http.HandlerFunc {
 				w.Write([]byte("{\"error\":\"not found\"}"))
 				return
 			}
-			http.Redirect(w, r, "/?error=not valid", 302)
+			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
 		}
 
 		certData, _ := site.GetCertificateInfo()

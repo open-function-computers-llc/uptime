@@ -15,11 +15,11 @@ func (s *Server) handleSiteDetailsByID() http.HandlerFunc {
 		vars := mux.Vars(r)
 		siteID, err := strconv.Atoi(vars["id"])
 		if err != nil {
-			http.Redirect(w, r, "/?error=not valid", 302)
+			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
 		}
 		site, err := site.FindWebsiteByID(siteID, s.storage, s.logger)
 		if err != nil {
-			http.Redirect(w, r, "/?error=not valid", 302)
+			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
 		}
 
 		w.Header().Set("Content-Type", "application/json")

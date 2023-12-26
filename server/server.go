@@ -16,20 +16,22 @@ type Server struct {
 	sites           []site.Website
 	router          *mux.Router
 	logger          *logrus.Logger
-	port            string
 	storage         *storage.Connection
 	shutdownChannel *chan string
+	httpClient      *http.Client
+	clientTimeout   int
+	port            string
 }
 
 // Bootstrap - share a pointer to a SQL DB storage struct with this server
-func (s *Server) Bootstrap(dbConn *storage.Connection, logger *logrus.Logger, shutdownChan *chan string) {
-	s.storage = dbConn
-
-	// set up logging
-	s.logger = logger
-
-	// set up the communication channel
-	s.shutdownChannel = shutdownChan
+func Create(dbConn *storage.Connection, logger *logrus.Logger, shutdownChan *chan string, client *http.Client, timeout int) Server {
+	s := Server{
+		storage:         dbConn,
+		logger:          logger,
+		shutdownChannel: shutdownChan,
+		httpClient:      client,
+		clientTimeout:   timeout,
+	}
 
 	// set app configuration
 	s.processConfiguration()
@@ -37,11 +39,6 @@ func (s *Server) Bootstrap(dbConn *storage.Connection, logger *logrus.Logger, sh
 	// set up routing
 	s.router = mux.NewRouter()
 	s.setRoutes()
-}
-
-// Create return a new instance of a server booted up and ready to go
-func Create() Server {
-	s := Server{}
 
 	return s
 }
