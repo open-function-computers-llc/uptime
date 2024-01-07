@@ -41,10 +41,16 @@ func main() {
 	}
 	existingSites := site.GetSites(&appStorage)
 
-	// http client for all requests
+	// http client & transport for all requests
 	httpClientTimeout := 10
+	transport := &http.Transport{
+		MaxIdleConns:        len(existingSites) * 2,
+		IdleConnTimeout:     time.Duration(httpClientTimeout) * time.Second,
+		MaxIdleConnsPerHost: 2,
+	}
 	client := &http.Client{
-		Timeout: time.Duration(httpClientTimeout) * time.Second,
+		Timeout:   time.Duration(httpClientTimeout) * time.Second,
+		Transport: transport,
 	}
 	shutDownChannel := make(chan string)
 
