@@ -6,6 +6,7 @@ import (
 
 // Monitor - periodically make an HTTP GET request to the site's URL, and optionally log it in the database
 func (s *Website) Monitor(shutdownChan *chan string) {
+	s.Logger.Info("started monitoring for " + s.URL)
 	go func() {
 		secondsDown := 0
 
@@ -46,9 +47,9 @@ func (s *Website) Monitor(shutdownChan *chan string) {
 
 			s.setSiteDown(s.DB, secondsDown, errMessage)
 
-			// wait 5 seconds and try again
-			time.Sleep(time.Second * 5)
-			secondsDown += 5
+			// wait 10 seconds and try again
+			time.Sleep(time.Second * 10)
+			secondsDown += 10
 		}
 	}()
 }
