@@ -11,7 +11,7 @@ func (s *Website) getStatusCodeAndErrorMessage() (int, string) {
 		return 404, "404: URL is blank"
 	}
 
-	output, err := exec.Command("/usr/bin/curl", "--max-time", "10", "--user-agent", "'Kurl waz up in go'", "-I", s.URL).Output()
+	output, err := exec.Command("/usr/bin/curl", "--max-time", "10", "--user-agent", "OFC_Uptime_Bot-version:CURL", "-I", s.URL).Output()
 
 	if err != nil {
 		return 500, err.Error()
