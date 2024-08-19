@@ -13,8 +13,8 @@ func printPercent(p float64) string {
 }
 
 func (s *Server) handleIndex() http.HandlerFunc {
-	buttonHTML := "<a class='button' href='/add'>Add Site</a>"
-	buttonHTML += "<a class='button' href='/deleted'>Show Deleted Sites</a>"
+	buttonHTML := "<span class='button-wrapper'><a class='button' href='/add'>Add Site</a>"
+	buttonHTML += "<a class='button' href='/deleted'>Show Deleted Sites</a></span>"
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		sites := site.GetSites(s.storage)
@@ -40,7 +40,7 @@ func (s *Server) handleIndex() http.HandlerFunc {
 			output += "<br /><strong>60:</strong>" + printPercent(site.CalcUptime(60, s.storage))
 			output += "<br /><strong>90:</strong>" + printPercent(site.CalcUptime(90, s.storage))
 			output += "</small></p>"
-			output += "<span> <a class='button' href='/details?url=" + site.URL + "'>Details</a> <a class='button' href='/remove/" + strconv.Itoa(site.ID) + "'>Delete</a></span></li>"
+			output += "<span> <a class='button' href='/details?url=" + site.URL + "'>Details</a> <a class='button' href='/webhooks/" + strconv.Itoa(site.ID) + "'>Webhooks</a> <a class='button' href='/remove/" + strconv.Itoa(site.ID) + "'>Delete</a></span></li>"
 		}
 		output += "</ul>" + buttonHTML
 

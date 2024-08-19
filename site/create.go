@@ -1,20 +1,17 @@
 package site
 
 import (
-	"net/http"
-
 	"github.com/open-function-computers-llc/uptime/storage"
 	"github.com/sirupsen/logrus"
 )
 
 // Create - Make a new instance of a Website
-func Create(address string, dbConn *storage.Connection, logger *logrus.Logger, client *http.Client, timeout int) Website {
+func Create(address string, dbConn *storage.Connection, logger *logrus.Logger, timeout int) Website {
 	w := Website{
 		URL:           address,
 		IsUp:          true,
 		DB:            dbConn,
 		Logger:        logger,
-		httpClient:    client,
 		clientTimeout: timeout,
 	}
 	logger.Info("Created Website:", address)
@@ -25,6 +22,8 @@ func Create(address string, dbConn *storage.Connection, logger *logrus.Logger, c
 		if err != nil {
 			logger.Info("Couldn't add new site to DB:", err)
 		}
+	} else {
+		w.ID = siteDatabaseID
 	}
 	return w
 }

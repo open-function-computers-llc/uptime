@@ -1,10 +1,9 @@
 module github.com/open-function-computers-llc/uptime
 
-go 1.21
+go 1.22
 
 require (
 	github.com/go-sql-driver/mysql v1.6.0
-	github.com/gorilla/mux v1.8.0
 	github.com/joho/godotenv v1.4.0
 	github.com/likexian/whois v1.12.1
 	github.com/likexian/whois-parser v1.20.5

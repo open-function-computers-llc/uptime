@@ -5,21 +5,21 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/open-function-computers-llc/uptime/site"
 )
 
 // Depreciated. Check out the new handler s.handleSiteDetails()
 func (s *Server) handleSiteDetailsByID() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		siteID, err := strconv.Atoi(vars["id"])
+		siteID, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
 		}
 		site, err := site.FindWebsiteByID(siteID, s.storage, s.logger)
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")

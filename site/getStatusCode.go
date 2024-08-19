@@ -49,32 +49,4 @@ func (s *Website) getStatusCodeAndErrorMessage() (int, string) {
 	}
 
 	return resInt, ""
-
-	// req, err := http.NewRequest("GET", s.URL, nil)
-
-	// if err != nil {
-	// 	if strings.HasSuffix(err.Error(), "(Client.Timeout exceeded while awaiting headers)") {
-	// 		// s.Logger.Error(s.URL + " took too long to respond, and the URL was different!")
-	// 		return s.clientTimeout, err.Error()
-	// 	}
-	// 	return s.clientTimeout, err.Error()
-	// }
-	// req.Header.Set("User-Agent", "OFC_Uptime_Bot-version:"+os.Getenv("VERSION"))
-
-	// client := *(s.httpClient)
-	// resp, err := client.Do(req)
-	// if err != nil {
-	// 	if strings.HasSuffix(err.Error(), "(Client.Timeout exceeded while awaiting headers)") {
-	// 		// s.Logger.Error(s.URL + " took too long to respond!")
-	// 		req.Header.Set("Connection", "Close")
-	// 		client.Do(req)
-	// 		return s.clientTimeout, err.Error()
-	// 	}
-	// 	req.Header.Set("Connection", "Close")
-	// 	client.Do(req)
-	// 	return 500, err.Error()
-	// }
-	// defer resp.Body.Close()
-
-	// return 200, ""
 }

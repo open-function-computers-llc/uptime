@@ -30,7 +30,9 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int, errMe
 
 	if secondsDown >= 60 && !s.standardWarningSent {
 		go func() {
-			err := checkSMTPEnv()
+			s.processWebhooks("standard")
+
+			err = checkSMTPEnv()
 			if err != nil {
 				s.Logger.Error(err.Error())
 				return
@@ -58,8 +60,11 @@ func (s *Website) setSiteDown(dbConn *storage.Connection, secondsDown int, errMe
 
 	if secondsDown >= 180 && !s.emergencyWarningSent {
 		go notifications.SendHTTPRequest(s.URL)
+
 		go func() {
-			err := checkSMTPEnv()
+			s.processWebhooks("emergency")
+
+			err = checkSMTPEnv()
 			if err != nil {
 				s.Logger.Error(err.Error())
 				return

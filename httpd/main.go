@@ -2,9 +2,7 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/open-function-computers-llc/uptime/server"
@@ -43,22 +41,13 @@ func main() {
 
 	// http client & transport for all requests
 	httpClientTimeout := 10
-	transport := &http.Transport{
-		MaxIdleConns:        len(existingSites) * 2,
-		IdleConnTimeout:     time.Duration(httpClientTimeout) * time.Second,
-		MaxIdleConnsPerHost: 2,
-	}
-	client := &http.Client{
-		Timeout:   time.Duration(httpClientTimeout) * time.Second,
-		Transport: transport,
-	}
 	shutDownChannel := make(chan string)
 
 	for _, existingSite := range existingSites {
-		site := site.Create(existingSite.URL, &appStorage, logger, client, httpClientTimeout)
+		site := site.Create(existingSite.URL, &appStorage, logger, httpClientTimeout)
 		site.Monitor(&shutDownChannel)
 	}
 
-	server := server.Create(&appStorage, logger, &shutDownChannel, client, httpClientTimeout)
+	server := server.Create(&appStorage, logger, &shutDownChannel, httpClientTimeout)
 	server.Serve()
 }

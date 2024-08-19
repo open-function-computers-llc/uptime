@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/open-function-computers-llc/uptime/site"
 	"github.com/open-function-computers-llc/uptime/storage"
 	"github.com/rs/cors"
@@ -14,22 +13,20 @@ import (
 // Server - an http server
 type Server struct {
 	sites           []site.Website
-	router          *mux.Router
+	router          *http.ServeMux
 	logger          *logrus.Logger
 	storage         *storage.Connection
 	shutdownChannel *chan string
-	httpClient      *http.Client
 	clientTimeout   int
 	port            string
 }
 
 // Bootstrap - share a pointer to a SQL DB storage struct with this server
-func Create(dbConn *storage.Connection, logger *logrus.Logger, shutdownChan *chan string, client *http.Client, timeout int) Server {
+func Create(dbConn *storage.Connection, logger *logrus.Logger, shutdownChan *chan string, timeout int) Server {
 	s := Server{
 		storage:         dbConn,
 		logger:          logger,
 		shutdownChannel: shutdownChan,
-		httpClient:      client,
 		clientTimeout:   timeout,
 	}
 
@@ -37,7 +34,7 @@ func Create(dbConn *storage.Connection, logger *logrus.Logger, shutdownChan *cha
 	s.processConfiguration()
 
 	// set up routing
-	s.router = mux.NewRouter()
+	s.router = &http.ServeMux{}
 	s.setRoutes()
 
 	return s

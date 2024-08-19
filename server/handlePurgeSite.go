@@ -4,14 +4,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	"github.com/open-function-computers-llc/uptime/site"
 )
 
 func (s *Server) handlePurgeSite() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		siteID, err := strconv.Atoi(vars["id"])
+		siteID, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
 		}

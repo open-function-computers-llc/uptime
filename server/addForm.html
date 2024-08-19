@@ -1,0 +1,27 @@
+<hr />
+<p>Add new webhook?</p>
+<form action="/store-webhook" method="POST">
+    <input type='hidden' name='site-id' value='%%SITEID%%' />
+
+    <label>Name:</label>
+    <input type='text' name='new-hook-name' />
+
+    <label>URL:</label>
+    <input type='text' name='new-hook-url' />
+
+    <label>Method:</label>
+    <select name='new-hook-method'>
+        <option value='POST'>POST</option>
+        <option value='GET'>GET</option>
+    </select>
+
+    <label>Type:</label>
+    <select name='new-hook-type'>
+        <option value='Standard'>Standard</option>
+        <option value='Emergency'>Emergency</option>
+    </select>
+
+    <br />
+    <br />
+    <button class="button">Save</button>
+</form>

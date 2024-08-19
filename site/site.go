@@ -1,8 +1,6 @@
 package site
 
 import (
-	"net/http"
-
 	"github.com/open-function-computers-llc/uptime/storage"
 	"github.com/sirupsen/logrus"
 )
@@ -14,7 +12,6 @@ type Website struct {
 	emergencyWarningSent bool
 	DB                   *storage.Connection
 	Logger               *logrus.Logger
-	httpClient           *http.Client
 	ID                   int
 	clientTimeout        int
 	URL                  string

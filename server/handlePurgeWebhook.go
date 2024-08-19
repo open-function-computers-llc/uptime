@@ -4,22 +4,24 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/open-function-computers-llc/uptime/site"
+	"github.com/open-function-computers-llc/uptime/webhook"
 )
 
-func (s *Server) handleRestoreSite() http.HandlerFunc {
+func (s *Server) handlePurgeWebhook() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		siteID, err := strconv.Atoi(r.PathValue("id"))
+		webhookID, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
+			s.logger.Error(err)
 			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
 		}
-		site, err := site.FindWebsiteByID(siteID, s.storage, s.logger)
+
+		err = webhook.Delete(s.storage.DB, webhookID)
 		if err != nil {
+			s.logger.Error(err)
 			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
 		}
-		s.log(site)
-		site.Restore(s.storage, s.logger)
-		site.Monitor(s.shutdownChannel)
 
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
