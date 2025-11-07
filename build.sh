@@ -5,7 +5,9 @@ if [[ ! -f .env ]] ; then
     echo "You are missing the required .env file."
     exit 1
 fi
+
 source .env
+
 
 export VERSION=`git rev-parse --short HEAD`
 
@@ -18,12 +20,13 @@ echo "Killing any old processes"
 killall ofc-uptime > /dev/null 2>&1
 
 echo "Purging old binaries"
-rm dist/ofc-uptime
+rm cmd/ofc-uptime
+
+echo "Building Frontend"
+# npx vite build
 
 echo "Building new binaries"
-cd httpd
-CGO_ENABLED=0 GODEBUG=http2client=0 go build -o ../dist/ofc-uptime
-cd ..
+CGO_ENABLED=0 GODEBUG=http2client=0 go build -o cmd/ofc-uptime
 
 echo "Starting new built binary"
-dist/ofc-uptime > log &
+cmd/ofc-uptime &

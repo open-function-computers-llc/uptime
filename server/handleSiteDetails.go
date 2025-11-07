@@ -3,47 +3,94 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
 
-	"github.com/open-function-computers-llc/uptime/site"
+	"github.com/open-function-computers-llc/uptime/certificate"
+	"github.com/open-function-computers-llc/uptime/domain"
+	"github.com/open-function-computers-llc/uptime/models"
+	"github.com/open-function-computers-llc/uptime/storage"
 )
 
-func (s *Server) handleSiteDetails() http.HandlerFunc {
+func (s *server) handleSiteDetails() http.HandlerFunc {
+	type detailsOutput struct {
+		CertInfo   certificate.CertificateInfo `json:"certInfo"`
+		DomainInfo domain.WhoisInfo            `json:"domainInfo"`
+		Outages    []*models.Outage            `json:"outages"`
+		Up         bool                        `json:"up"`
+		Uptime     map[string]float64          `json:"uptime"`
+		Url        string                      `json:"url"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 
+		var site *models.Site
+
+		// find site by URL
 		siteURL := r.FormValue("url")
-		if siteURL == "" {
-			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
-		}
-		site, err := site.FindWebsiteByURL(siteURL, s.storage, s.logger)
-		if err != nil {
-			if err.Error() == "Site was not found when looping over DB records" {
-				w.WriteHeader(404)
-				w.Header().Add("Content-type", "application/json")
-				w.Write([]byte("{\"error\":\"not found\"}"))
-				return
+		if siteURL != "" {
+			for _, loadedSite := range s.sites {
+				if siteURL == loadedSite.URL {
+					site = loadedSite
+					break
+				}
 			}
+		}
+
+		// find site by ID
+		if site == nil {
+			siteID, err := strconv.Atoi(r.PathValue("id"))
+			if err != nil {
+				http.Redirect(w, r, "/?error=invalid details `id` param", http.StatusFound)
+			}
+			site = s.sites[siteID]
+		}
+
+		// at this point, we better have a site
+		if site == nil {
 			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
 		}
 
-		certData, _ := site.GetCertificateInfo()
-		domainData, _ := site.GetDomainInfo()
+		outages, err := storage.SiteOutages(site.ID, s.storage)
+		if err != nil {
+			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
+		}
 
-		data := map[string]interface{}{
-			"url":        site.URL,
-			"domainInfo": domainData,
-			"up":         site.IsUp,
-			"outages":    site.Outages(s.storage),
-			"uptime": map[string]interface{}{
-				"days1":  site.CalcUptime(1, s.storage),
-				"days7":  site.CalcUptime(7, s.storage),
-				"days30": site.CalcUptime(30, s.storage),
-				"days60": site.CalcUptime(60, s.storage),
-				"days90": site.CalcUptime(90, s.storage),
+		updays1, _ := strconv.Atoi(strings.Replace(site.Uptime_1day, ".", "", 1))
+		updays7, _ := strconv.Atoi(strings.Replace(site.Uptime_7day, ".", "", 1))
+		updays30, _ := strconv.Atoi(strings.Replace(site.Uptime_30day, ".", "", 1))
+		updays60, _ := strconv.Atoi(strings.Replace(site.Uptime_60day, ".", "", 1))
+		updays90, _ := strconv.Atoi(strings.Replace(site.Uptime_90day, ".", "", 1))
+
+		domainInfo, err := domain.GetDomainInfo(site.URL)
+		if err != nil {
+			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
+		}
+		certInfo, err := certificate.GetCertificateInfo(site.URL)
+		if err != nil {
+			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			return
+		}
+
+		output := detailsOutput{
+			Up:         site.IsUp,
+			Url:        site.URL,
+			Outages:    outages,
+			CertInfo:   certInfo,
+			DomainInfo: domainInfo,
+			Uptime: map[string]float64{
+				"days1":  float64(updays1) / 10000,
+				"days7":  float64(updays7) / 10000,
+				"days30": float64(updays30) / 10000,
+				"days60": float64(updays60) / 10000,
+				"days90": float64(updays90) / 10000,
 			},
-			"certInfo": certData,
 		}
-		dataJSON, _ := json.Marshal(data)
+		dataJSON, _ := json.Marshal(output)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(dataJSON)
 	}

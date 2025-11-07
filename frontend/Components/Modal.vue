@@ -1,0 +1,40 @@
+<template>
+<div class="modal" @click="close">
+    <div class="modal-contents">
+        <slot />
+    </div>
+</div>
+</template>
+
+<script setup>
+
+const emit = defineEmits(['close']);
+function close() {
+    emit('close');
+}
+</script>
+
+<style scoped lang="scss">
+@import "../scss/variables.scss";
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba($c-black, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .modal-contents {
+        background-color: $c-white;
+        padding: 1rem;
+        border-radius: 25px;
+        overflow: auto;
+        width: 90vw;
+        height: 90vh;
+    }
+}
+</style>

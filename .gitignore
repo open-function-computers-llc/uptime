@@ -1,4 +1,8 @@
-dist/ofc-uptime
-database
+dist/*.js
+dist/*.html
+dist/.vite
+dist/assets
 log
 .env
+node_modules
+cmd/ofc-uptime
