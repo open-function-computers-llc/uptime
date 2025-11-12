@@ -320,13 +320,19 @@ func StopMonitoringSite(s *models.Site, logger *logrus.Logger) {
 }
 
 func SetSiteUp(c *Connection, s *models.Site) error {
+	// if the site was previously down long enough to send an email, let's send
+	// a follow up email saying it's back online
+	if s.StandardWarningSent {
+		duration := SiteMostRecentOutageDuration(s.ID, c)
+		go email.Send(s.URL+" is back up", buildHTMLUpMessage(s.URL, s.Meta, duration), false)
+	}
+
 	s.EmergencyWarningSent = false
 	s.StandardWarningSent = false
 
 	if !s.IsUp {
 		s.IsUp = true
 		c.Logger.Info("bringing this site back up: ", s)
-		go email.Send(s.URL+" is back up", buildHTMLMessage(s.URL, s.Meta, 0), false)
 		return endOutage(c, s)
 	}
 	return nil

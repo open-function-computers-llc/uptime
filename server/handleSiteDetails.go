@@ -23,6 +23,9 @@ func (s *server) handleSiteDetails() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		// just because, get the data super fresh
+		s.loadSites()
+
 		r.ParseForm()
 
 		var site *models.Site

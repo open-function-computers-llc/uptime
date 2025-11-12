@@ -23,7 +23,7 @@ echo "Purging old binaries"
 rm cmd/ofc-uptime
 
 echo "Building Frontend"
-# npx vite build
+npx vite build
 
 echo "Building new binaries"
 CGO_ENABLED=0 GODEBUG=http2client=0 go build -o cmd/ofc-uptime

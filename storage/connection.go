@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -41,7 +42,17 @@ func setUpStorage() (*sql.DB, error) {
 		return nil, err
 	}
 
-	return dbConn, err
+	if err = dbConn.Ping(); err != nil {
+		return nil, err
+	}
+
+	// Force all timestamps and NOW()/UTC_TIMESTAMP() to use UTC
+	_, err = dbConn.Exec("SET time_zone = '+00:00'")
+	if err != nil {
+		return nil, fmt.Errorf("failed to set UTC timezone: %w", err)
+	}
+
+	return dbConn, nil
 }
 
 func createDSN() (string, error) {

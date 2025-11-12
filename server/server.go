@@ -72,14 +72,23 @@ func (s *server) log(messages ...interface{}) {
 func (s *server) loadSites() error {
 	sites, err := storage.GetSites(s.storage)
 
-	// loop over the fresh sites in the DB to add to the server list
+	// loop over the fresh sites in the DB
 	for _, site := range sites {
+		//  add to the server list if it's missing
 		if _, ok := s.sites[site.ID]; !ok {
 			s.sites[site.ID] = site
 			continue
 		}
 
+		// update the existing site with the latest goodies from the DB
 		s.sites[site.ID].IsDeleted = site.IsDeleted
+		s.sites[site.ID].Uptime_1day = site.Uptime_1day
+		s.sites[site.ID].Uptime_7day = site.Uptime_7day
+		s.sites[site.ID].Uptime_30day = site.Uptime_30day
+		s.sites[site.ID].Uptime_60day = site.Uptime_60day
+		s.sites[site.ID].Uptime_90day = site.Uptime_90day
+		s.sites[site.ID].URL = site.URL
+		s.sites[site.ID].Meta = site.Meta
 	}
 
 	// make sure all loaded sites that are not deleted are monitoring

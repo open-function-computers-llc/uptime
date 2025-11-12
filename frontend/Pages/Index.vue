@@ -60,9 +60,9 @@ const fetchSites = async () => {
         console.error("Error fetching sites:", err);
     }
 };
+
 const pollSites = () => {
     fetchSites();
-
     intervalId = setInterval(fetchSites, 15 * 1000); // do it every 15 seconds
 };
 
@@ -90,6 +90,11 @@ const sitesToShow = computed(() => {
     }
 
     return output.sort((a, b) => {
+        // First: prioritize down items (false before true)
+        if (a.IsUp !== b.IsUp) {
+            return a.IsUp ? 1 : -1;
+        }
+
         const aNormalized = a.URL.replace(/^https?:\/\//, "")
             .replace(/^www\./, "")
             .toLowerCase();

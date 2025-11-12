@@ -124,3 +124,13 @@ func SiteOutages(siteID int, c *Connection) ([]*models.Outage, error) {
 
 	return output, nil
 }
+
+func SiteMostRecentOutageDuration(siteID int, c *Connection) int {
+	outages, _ := SiteOutages(siteID, c)
+	if len(outages) == 0 {
+		return 0
+	}
+	mostRecentOutage := outages[len(outages)-1]
+
+	return mostRecentOutage.Duration
+}
