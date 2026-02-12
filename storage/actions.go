@@ -83,7 +83,7 @@ func buildHTMLDownMessage(url, meta string, secondsDown int) string {
 func buildHTMLUpMessage(url, meta string, secondsDown int) string {
 	return `
 	<h1>` + url + ` is back up!</h1>
-	<p>It has was down for ` + strconv.Itoa(secondsDown) + ` seconds.</p>
+	<p>It was down for ` + strconv.Itoa(secondsDown) + ` seconds.</p>
 	<p><strong>Meta info:</strong><br />` + strings.ReplaceAll(meta, "\n", "<br />") + `</p>
 	`
 }
