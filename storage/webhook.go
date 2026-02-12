@@ -8,11 +8,10 @@ func DeleteWebhook(id int, c *Connection) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
+
 	_, err = statement.Exec(id)
-	if err != nil {
-		return err
-	}
-	return statement.Close()
+	return err
 }
 
 func StoreWebhook(name, url, method, hookType string, siteID int, c *Connection) error {
@@ -29,12 +28,10 @@ func StoreWebhook(name, url, method, hookType string, siteID int, c *Connection)
 	if err != nil {
 		return err
 	}
-	_, err = statement.Exec(siteID, name, url, method, newHookType)
-	if err != nil {
-		return err
-	}
+	defer statement.Close()
 
-	return nil
+	_, err = statement.Exec(siteID, name, url, method, newHookType)
+	return err
 }
 
 func SiteWebhooks(siteID int, c *Connection) ([]*models.Webhook, error) {

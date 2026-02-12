@@ -17,6 +17,7 @@ func CreateSite(url, meta string, c *Connection) (*models.Site, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(url, meta, time.Now().UTC().Format("2006-01-02 15:04:05"), time.Now().UTC().Format("2006-01-02 15:04:05"))
 
@@ -30,6 +31,7 @@ func UpdateSite(id int, url, meta string, dbConn *Connection) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(url, meta, id)
 
@@ -243,13 +245,10 @@ func DeleteSite(c *Connection, id int) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(1, id)
-	if err != nil {
-		return err
-	}
-
-	return statement.Close()
+	return err
 }
 
 // Destroy - delete a site from the DB and close down the monitoring routine
@@ -259,13 +258,10 @@ func RestoreSite(c *Connection, id int) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(0, id)
-	if err != nil {
-		return err
-	}
-
-	return statement.Close()
+	return err
 }
 
 func Monitor(s *models.Site, c *Connection) {
@@ -293,12 +289,13 @@ func Monitor(s *models.Site, c *Connection) {
 
 		resCode, err := s.GetStatusCodeAndError()
 		if resCode == 200 && err == nil {
+			secondsDown = 0 // reset the secondsDown counter
 			go SetSiteUp(c, s)
 			time.Sleep(time.Second * time.Duration(okSeconds))
 			continue
 		}
 
-		go SetSiteDown(c, s, c.Logger)
+		go SetSiteDown(c, s)
 
 		if secondsDown >= dangerSeconds {
 			webhooks, _ := SiteWebhooks(s.ID, c)
@@ -338,12 +335,18 @@ func SetSiteUp(c *Connection, s *models.Site) error {
 	return nil
 }
 
-func SetSiteDown(c *Connection, s *models.Site, logger *logrus.Logger) error {
+func SetSiteDown(c *Connection, s *models.Site) error {
 	if s.IsUp {
 		s.IsUp = false
-		logger.Info("site is now down! ", s)
-		return beginOutage(c, s)
+		c.Logger.Info("site is now down! ", s)
+		err := beginOutage(c, s)
+		if err != nil {
+			c.Logger.Info(err.Error())
+		}
+		return err
 	}
+
+	c.Logger.Info("Didn't set the site down as it's already down...", s.ID)
 
 	return nil
 }
@@ -356,6 +359,7 @@ func UpdateLastChecked(id int, c *Connection) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(time.Now().UTC().Format("2006-01-02 15:04:05"), id)
 
@@ -370,6 +374,7 @@ func PurgeSite(id int, c *Connection) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(id)
 	if err != nil {
@@ -379,12 +384,13 @@ func PurgeSite(id int, c *Connection) error {
 	// purge webhooks
 	sql = "DELETE FROM webhooks WHERE website_id = ?"
 
-	statement, err = c.DB.Prepare(sql)
+	statement2, err := c.DB.Prepare(sql)
 	if err != nil {
 		return err
 	}
+	defer statement2.Close()
 
-	_, err = statement.Exec(id)
+	_, err = statement2.Exec(id)
 	if err != nil {
 		return err
 	}
@@ -392,12 +398,13 @@ func PurgeSite(id int, c *Connection) error {
 	// purge actual site
 	sql = "DELETE FROM sites WHERE id = ?"
 
-	statement, err = c.DB.Prepare(sql)
+	statement3, err := c.DB.Prepare(sql)
 	if err != nil {
 		return err
 	}
+	defer statement3.Close()
 
-	_, err = statement.Exec(id)
+	_, err = statement3.Exec(id)
 
 	return err
 }

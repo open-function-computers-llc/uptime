@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"errors"
+	"strconv"
 	"time"
 
 	"github.com/open-function-computers-llc/uptime/models"
@@ -13,79 +15,81 @@ func beginOutage(c *Connection, s *models.Site) error {
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(0, s.ID)
 	if err != nil {
 		return err
 	}
-	statement.Close()
 
 	// insert into outages table
 	sql = "insert into outages values (null, ?, ?, '0000-00-00 00:00:00');"
-	statement, err = c.DB.Prepare(sql)
+	statement2, err := c.DB.Prepare(sql)
+	if err != nil {
+		return err
+	}
+	defer statement2.Close()
+
+	result, err := statement2.Exec(s.ID, time.Now().UTC().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		return err
 	}
 
-	_, err = statement.Exec(s.ID, time.Now().UTC().Format("2006-01-02 15:04:05"))
+	outageID, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
 
-	return statement.Close()
+	c.Logger.Info("Created outage for site " + s.URL)
+	c.Logger.Info("Outage ID: " + strconv.Itoa(int(outageID)))
+
+	return nil
 }
 
 func endOutage(c *Connection, s *models.Site) error {
+	c.Logger.Info("Bringing back up site with ID: " + strconv.Itoa(s.ID))
+
 	// update site table
 	sql := "UPDATE sites SET is_up = ? WHERE id = ?"
 	statement, err := c.DB.Prepare(sql)
 	if err != nil {
 		return err
 	}
+	defer statement.Close()
 
 	_, err = statement.Exec(1, s.ID)
 	if err != nil {
 		return err
 	}
-	statement.Close()
 
-	sql = "update outages set outage_end = ? where website_id = ? and outage_end = '0000-00-00 00:00:00'"
-	statement, err = c.DB.Prepare(sql)
+	// find oldest outage
+	rows, err := c.DB.Query("SELECT id FROM outages WHERE website_id = ? and outage_end = '0000-00-00 00:00:00' ORDER BY outage_start ASC LIMIT 1", s.ID)
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
+	outageID := 0
 
-	statement.Exec(time.Now().UTC().Format("2006-01-02 15:04:05"), s.ID)
-	return statement.Close()
+	for rows.Next() {
+		err := rows.Scan(&outageID)
+		if err != nil {
+			return err
+		}
+	}
 
-	// s.Logger.Info(s.URL + " is back up")
+	if outageID == 0 {
+		return errors.New("couldn't find an outage to finish... wtf?")
+	}
 
-	// if secondsDown >= 35 {
-	// 	go func() {
-	// 		err := checkSMTPEnv()
-	// 		if err != nil {
-	// 			s.Logger.Error(err.Error())
-	// 			return
-	// 		}
+	sql = "UPDATE outages SET outage_end = ? WHERE id = ?"
+	statement2, err := c.DB.Prepare(sql)
+	if err != nil {
+		return err
+	}
+	defer statement2.Close()
 
-	// 		s.Logger.Info("Sending website up email for " + s.URL)
-	// 		m := gomail.NewMessage()
-	// 		m.SetHeader("From", os.Getenv("EMAIL_FROM"))
-	// 		m.SetHeader("To", os.Getenv("EMAIL_TO"))
-	// 		m.SetHeader("Subject", s.URL+" is back up")
-	// 		m.SetBody("text/html", "<h1>"+s.URL+" is back online!</h1><p>It was down for "+strconv.Itoa(secondsDown)+" seconds.</p>")
-
-	// 		port := os.Getenv("SMTP_PORT")
-	// 		portInt, _ := strconv.Atoi(port)
-	// 		d := gomail.NewDialer(os.Getenv("SMTP_HOST"),
-	// 			portInt,
-	// 			os.Getenv("SMTP_USER"),
-	// 			os.Getenv("SMTP_PASSWORD"))
-	// 		if err := d.DialAndSend(m); err != nil {
-	// 			s.Logger.Error(err)
-	// 		}
-	// 	}()
-	// }
+	_, err = statement2.Exec(time.Now().UTC().Format("2006-01-02 15:04:05"), outageID)
+	return err
 }
 
 func SiteOutages(siteID int, c *Connection) ([]*models.Outage, error) {
