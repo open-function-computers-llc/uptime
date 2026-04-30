@@ -103,3 +103,10 @@ func (s *server) loadSites() error {
 	}
 	return err
 }
+
+func (s *server) outagesByDay() (map[string]int, error) {
+	return storage.OutagesByDay(s.storage)
+}
+func (s *server) outagesDurationsByDay() (map[string]int, error) {
+	return storage.OutageDurationsByDay(s.storage)
+}

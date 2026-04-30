@@ -46,6 +46,7 @@ func (s *server) handleSiteDetails() http.HandlerFunc {
 			siteID, err := strconv.Atoi(r.PathValue("id"))
 			if err != nil {
 				http.Redirect(w, r, "/?error=invalid details `id` param", http.StatusFound)
+				return
 			}
 			site = s.sites[siteID]
 		}
@@ -70,8 +71,11 @@ func (s *server) handleSiteDetails() http.HandlerFunc {
 
 		domainInfo, err := domain.GetDomainInfo(site.URL)
 		if err != nil {
-			http.Redirect(w, r, "/?error=not valid", http.StatusFound)
-			return
+			domainInfo.Status = []string{"UNKNOWN"}
+			domainInfo.Error = err.Error()
+			// s.storage.Logger.Error(err.Error())
+			// http.Redirect(w, r, "/?error=not valid", http.StatusFound)
+			// return
 		}
 		certInfo, err := certificate.GetCertificateInfo(site.URL)
 		if err != nil {

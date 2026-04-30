@@ -4,10 +4,17 @@
     <Head title="Uptime Monitoring" />
 
     <div class="d-flex gap-3 justify-content-between align-items-center mb-3">
-        <Link class="btn btn-primary text-white" href="/add">
-        Add Site
-        <PlusLg class="nudge-up" />
-        </Link>
+        <div class="d-flex gap-2">
+            <Link class="btn btn-primary text-white" href="/add">
+                Add Site
+                <PlusLg class="nudge-up" />
+            </Link>
+            <Link class="btn btn-secondary text-white" href="/history">
+                Outages
+                <BarChartFill class="nudge-up" />
+            </Link>
+
+        </div>
 
         <Switch v-model="showDeleted" :label="showDeleted ? 'Deleted Sites' : 'Active Sites'" />
     </div>
@@ -31,6 +38,7 @@ import Site from "@/Components/Site.vue";
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import Switch from "@/Components/Switch.vue";
 import PlusLg from "@/Icons/PlusLg.vue";
+import BarChartFill from "@/Icons/BarChartFill.vue";
 import Modal from "../Components/Modal.vue";
 import SiteDetails from "../Components/SiteDetails.vue";
 

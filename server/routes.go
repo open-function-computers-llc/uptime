@@ -20,6 +20,7 @@ func (s *server) setRoutes() {
 		"POST /store":              s.handleSiteStore(),
 		"GET /details/{id}":        s.handleSiteDetails(),
 		"GET /details":             s.handleSiteDetails(),
+		"GET /history":             s.handleHistory(),
 		"GET /":                    s.handleIndex(),
 	}
 

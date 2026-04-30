@@ -3,8 +3,10 @@
         "@inertiajs/vue3": "^2.1.2",
         "@vitejs/plugin-vue": "^6.0.1",
         "bootstrap": "^5.3.7",
+        "chart.js": "^4.5.1",
         "vite": "^7.1.2",
-        "vue": "^3.5.18"
+        "vue": "^3.5.18",
+        "vue-chartjs": "^5.3.3"
     },
     "devDependencies": {
         "sass": "^1.90.0",
