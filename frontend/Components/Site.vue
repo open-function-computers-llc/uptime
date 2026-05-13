@@ -1,6 +1,6 @@
 <template>
 <div class="site" :class="backgroundColor">
-    <div class="fw-bold">
+    <div class="fw-bold site-name">
         {{ site.URL }}
     </div>
     <div class="d-flex justify-content-between align-items-end">
@@ -27,10 +27,10 @@
                     <Info />
                 </a>
                 <Link class="btn btn-primary btn-sm" :href="'/edit/' + site.ID" title="Edit">
-                <Pencil />
+                    <Pencil />
                 </Link>
                 <Link class="btn btn-success btn-sm" :href="'/webhooks/' + site.ID" title="Edit Webhooks">
-                <CloudUpload />
+                    <CloudUpload />
                 </Link>
                 <button class="btn btn-danger btn-sm" @click="removeSite" title="Delete">
                     <Trash />
@@ -43,7 +43,7 @@
                     <CircleSlash />
                 </button>
                 <Link class="btn btn-danger btn-sm" :href="'/purge/' + site.ID" title="Purge Site">
-                <CircleSlash />
+                    <CircleSlash />
                 </Link>
             </template>
         </div>
@@ -114,6 +114,10 @@ function setActive() {
     flex-direction: column;
     justify-content: space-between;
     border: 2px solid;
+
+    .site-name {
+        word-break: break-all;
+    }
 
     &.green {
         background-color: lighten($c-green, 50);
