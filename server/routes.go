@@ -21,6 +21,7 @@ func (s *server) setRoutes() {
 		"GET /details/{id}":        s.handleSiteDetails(),
 		"GET /details":             s.handleSiteDetails(),
 		"GET /history":             s.handleHistory(),
+		"POST /cleanup":            s.handleCleanup(),
 		"GET /":                    s.handleIndex(),
 	}
 

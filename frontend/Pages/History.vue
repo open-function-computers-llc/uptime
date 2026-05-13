@@ -2,18 +2,61 @@
 <div class="my-3">
 
     <Head title="Outage History" />
+
+    <!-- Header -->
     <div class="d-flex gap-3 justify-content-between align-items-center mb-3">
         <div class="d-flex gap-2">
             <Link class="btn btn-primary text-white" href="/">
                 Home
             </Link>
+
+            <CleanupButton />
         </div>
     </div>
+
     <div class="row">
         <div class="col">
-            <h1>Outage History</h1>
+            <h1>Outage History ({{Object.values(outages).reduce((accumulator, count) => {
+                return accumulator + count;
+            }) }} Outages)</h1>
 
-            <!-- Single Chart Container for Overlaid Data -->
+            <!-- Stats Grid -->
+            <div class="d-flex gap-3 mb-5">
+                <div v-for="stat in windowedStats" :key="stat.period" class="w-100">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">{{ stat.label }}</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <!-- Show Downtime in small text for transparency -->
+                                    <h4 class="mb-0 text-danger" style="font-size: 0.9rem;">
+                                        {{ stat.totalSecondsFormatted }} down
+                                    </h4>
+                                    <small class="text-muted">Duration</small>
+                                </div>
+                                <div class="text-end">
+                                    <!-- Show Uptime Percentage prominently -->
+                                    <h5 class="mb-0 text-success">{{ stat.uptimePercentage }}%</h5>
+                                    <small class="text-muted">Uptime</small>
+                                </div>
+                            </div>
+                            <!-- Uptime Progress Bar (Green) -->
+                            <div class="progress mt-3" style="height: 5px;">
+                                <div
+                                    class="progress-bar bg-success"
+                                    role="progressbar"
+                                    :style="{ width: stat.uptimePercentage + '%' }"
+                                    :aria-valuenow="stat.uptimePercentage"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
             <div class="chart-container" style="position: relative; height: 500px; width: 100%;">
                 <Bar
                     v-if="combinedChartData.labels.length > 0"
@@ -31,8 +74,6 @@ import { Head, Link } from "@inertiajs/vue3";
 import Layout from "@/Layouts/Standard.vue";
 import { computed } from "vue";
 import { Bar } from 'vue-chartjs'
-
-// Import specific components needed for Bar and Line charts
 import {
     Chart as ChartJS,
     Title,
@@ -41,17 +82,13 @@ import {
     BarElement,
     CategoryScale,
     LinearScale,
-    LineElement,  // Needed for drawing lines
-    PointElement  // Needed for drawing dots
+    LineElement,
+    PointElement
 } from 'chart.js';
-
-// Import the Controllers (the logic for the chart types)
 import { LineController, BarController } from 'chart.js';
+import CleanupButton from "../Components/CleanupButton.vue";
 
-// Register ALL required components
-// 1. Scale types
-// 2. Elements (shapes)
-// 3. Controllers (chart types)
+// Register Chart.js components
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -86,26 +123,84 @@ const props = defineProps({
     },
 });
 
-// Helper to sort keys chronologically
+// --- Stats Logic ---
+
+const SECONDS_IN_DAY = 24 * 60 * 60; // 86,400 seconds
+
+const windowedStats = computed(() => {
+    const windows = [
+        { days: 1, label: 'Last 24 Hours' },
+        { days: 7, label: 'Last 7 Days' },
+        { days: 30, label: 'Last 30 Days' },
+        { days: 60, label: 'Last 60 Days' },
+        { days: 90, label: 'Last 90 Days' }
+    ];
+
+    // Get current date boundaries for calculation
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Start of today
+
+    return windows.map(window => {
+        // Calculate the start date of the window
+        const windowStart = new Date(now);
+        windowStart.setDate(now.getDate() - window.days);
+
+        // Format window start as YYYY-MM-DD for comparison
+        const startDateStr = windowStart.toISOString().split('T')[0];
+
+        // Filter durations for this window
+        let totalSeconds = 0;
+
+        // Iterate through outageDurations to sum seconds within the window
+        Object.keys(props.outageDurations).forEach(dateStr => {
+            if (dateStr >= startDateStr) {
+                totalSeconds += props.outageDurations[dateStr] || 0;
+            }
+        });
+
+        // Calculate total possible seconds in the window
+        const totalPossibleSeconds = window.days * SECONDS_IN_DAY;
+
+        // Calculate Downtime Percentage
+        const downtimePercentage = totalPossibleSeconds > 0
+            ? (totalSeconds / totalPossibleSeconds) * 100
+            : 0;
+
+        // Calculate Uptime Percentage (Inverted)
+        const uptimePercentage = Math.max(0, 100 - downtimePercentage);
+
+        // Helper to format seconds into HH:MM:SS
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        const totalSecondsFormatted = `${hours}h ${minutes}m ${seconds}s`;
+
+        return {
+            period: window.days,
+            label: window.label,
+            totalSeconds,
+            totalSecondsFormatted,
+            uptimePercentage: parseFloat(uptimePercentage.toFixed(2))
+        };
+    });
+});
+
+
+// --- Chart Logic ---
+
 const getSortedDates = (obj) => {
     return Object.keys(obj).sort();
 };
 
-// Combine labels from both props (assuming they share the same date keys)
 const allLabels = computed(() => {
     const datesOutages = getSortedDates(props.outages);
     const datesDurations = getSortedDates(props.outageDurations);
-
-    // Merge and deduplicate, then sort
     const allDates = [...new Set([...datesOutages, ...datesDurations])];
     return allDates.sort();
 });
 
-// Compute the combined chart data
 const combinedChartData = computed(() => {
     const labels = allLabels.value;
-
-    // Prepare data arrays for each dataset, defaulting to 0 if no data exists for a specific day
     const outagesData = labels.map(date => props.outages[date] || 0);
     const durationsData = labels.map(date => props.outageDurations[date] || 0);
 
@@ -114,31 +209,30 @@ const combinedChartData = computed(() => {
         datasets: [
             {
                 label: 'Outage Count',
-                backgroundColor: 'rgba(220, 53, 69, 0.6)', // Red bars
+                backgroundColor: 'rgba(220, 53, 69, 0.6)',
                 borderColor: 'rgba(220, 53, 69, 1)',
                 borderWidth: 1,
                 data: outagesData,
-                yAxisID: 'y', // Primary Y axis
-                type: 'bar',  // Explicitly set bar type
-                order: 2      // Draw bars on top of lines
+                yAxisID: 'y',
+                type: 'bar',
+                order: 2
             },
             {
                 label: 'Total Duration (Seconds)',
-                backgroundColor: 'rgba(0, 123, 255, 0.2)', // Semi-transparent blue
-                borderColor: 'rgba(0, 123, 255, 1)', // Solid blue line
+                backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                borderColor: 'rgba(0, 123, 255, 1)',
                 borderWidth: 2,
                 data: durationsData,
-                yAxisID: 'y1', // Secondary Y axis
-                type: 'line',  // Explicitly set line type
+                yAxisID: 'y1',
+                type: 'line',
                 pointRadius: 2,
                 pointHoverRadius: 5,
-                order: 1       // Draw line under bars
+                order: 1
             }
         ]
     };
 });
 
-// Configure options for dual Y-axes
 const combinedChartOptions = computed(() => {
     return {
         responsive: true,
@@ -154,15 +248,11 @@ const combinedChartOptions = computed(() => {
             },
             tooltip: {
                 callbacks: {
-                    // Format the duration tooltip to be more readable (optional)
                     label: function (context) {
                         let label = context.dataset.label || '';
-                        if (label) {
-                            label += ': ';
-                        }
+                        if (label) label += ': ';
                         if (context.parsed.y !== null) {
                             if (context.dataset.type === 'line') {
-                                // Format seconds into hours/minutes if desired, or leave as is
                                 const seconds = context.parsed.y;
                                 const hours = Math.floor(seconds / 3600);
                                 const minutes = Math.floor((seconds % 3600) / 60);
@@ -178,40 +268,24 @@ const combinedChartOptions = computed(() => {
         },
         scales: {
             x: {
-                title: {
-                    display: true,
-                    text: 'Date'
-                },
-                ticks: {
-                    maxRotation: 45,
-                    minRotation: 45
-                }
+                title: { display: true, text: 'Date' },
+                ticks: { maxRotation: 45, minRotation: 45 }
             },
             y: {
                 type: 'linear',
                 display: true,
                 position: 'left',
-                title: {
-                    display: true,
-                    text: 'Outage Count'
-                },
+                title: { display: true, text: 'Outage Count' },
                 beginAtZero: true,
-                ticks: {
-                    stepSize: 1 // Integers for count
-                }
+                ticks: { stepSize: 1 }
             },
             y1: {
                 type: 'linear',
                 display: true,
                 position: 'right',
-                title: {
-                    display: true,
-                    text: 'Duration (Seconds)'
-                },
+                title: { display: true, text: 'Duration (Seconds)' },
                 beginAtZero: true,
-                grid: {
-                    drawOnChartArea: false // Prevent grid lines from overlapping the primary axis grid
-                }
+                grid: { drawOnChartArea: false }
             }
         }
     };
@@ -224,5 +298,13 @@ const combinedChartOptions = computed(() => {
     border-radius: 0.375rem;
     padding: 1rem;
     background-color: #fff;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
 }
 </style>
