@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"strings"
+
 	"github.com/likexian/whois"
 	whoisparser "github.com/likexian/whois-parser"
 )
@@ -17,7 +19,13 @@ type WhoisInfo struct {
 
 func GetDomainInfo(url string) (WhoisInfo, error) {
 	output := WhoisInfo{}
-	res, err := whois.Whois(GetDomainFromURL(url))
+
+	whoisServers := []string{}
+	if strings.Contains(url, ".works") {
+		whoisServers = append(whoisServers, "whois.squarespace.domains")
+	}
+
+	res, err := whois.Whois(GetDomainFromURL(url), whoisServers...)
 	if err != nil {
 		return output, err
 	}
