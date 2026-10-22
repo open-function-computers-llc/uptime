@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/likexian/whois"
@@ -25,7 +26,9 @@ func GetDomainInfo(url string) (WhoisInfo, error) {
 		whoisServers = append(whoisServers, "whois.squarespace.domains")
 	}
 
-	res, err := whois.Whois(GetDomainFromURL(url), whoisServers...)
+	domainName := GetDomainFromURL(url)
+
+	res, err := whois.Whois(domainName, whoisServers...)
 	if err != nil {
 		return output, err
 	}
@@ -33,6 +36,10 @@ func GetDomainInfo(url string) (WhoisInfo, error) {
 	parsed, err := whoisparser.Parse(res)
 	if err != nil {
 		return output, err
+	}
+
+	if parsed.Domain == nil || parsed.Registrant == nil || parsed.Registrar == nil {
+		return output, errors.New("whois data for " + domainName + " is incomplete")
 	}
 
 	output.Status = parsed.Domain.Status

@@ -330,9 +330,66 @@ func SetSiteUp(c *Connection, s *models.Site) error {
 	if !s.IsUp {
 		s.IsUp = true
 		c.Logger.Info("bringing this site back up: ", s)
-		return endOutage(c, s)
+		err := endOutage(c, s)
+		if err != nil {
+			c.Logger.Info(err.Error())
+		}
 	}
+
+	go checkSystemOutageFlap(c)
+
 	return nil
+}
+
+// lastSystem911Sent tracks when the system-wide 911 was last fired so we don't
+// spam notifications while many sites recover at once.
+var lastSystem911Sent = time.Time{}
+
+// checkSystemOutageFlap fires a system-wide 911 if there have been more than
+// FLAP_OUTAGE_THRESHOLD outages in the last FLAP_OUTAGE_WINDOW_MINUTES minutes.
+// It is triggered each time a site comes back up and is throttled to at most
+// once every 5 minutes.
+func checkSystemOutageFlap(c *Connection) {
+	windowMinutes, _ := strconv.Atoi(os.Getenv("FLAP_OUTAGE_WINDOW_MINUTES"))
+	if windowMinutes == 0 {
+		windowMinutes = 30
+	}
+	threshold, _ := strconv.Atoi(os.Getenv("FLAP_OUTAGE_THRESHOLD"))
+	if threshold == 0 {
+		threshold = 10
+	}
+
+	if time.Since(lastSystem911Sent) < 5*time.Minute {
+		return
+	}
+
+	// Purge short blips and old history so noise doesn't skew the count.
+	if err := CleanupOutages(c); err != nil {
+		c.Logger.Info("flap check: cleanup failed: ", err)
+		return
+	}
+
+	count, err := TotalOutagesInLastMinutes(windowMinutes, c)
+	if err != nil {
+		c.Logger.Info("flap check: failed to count recent outages: ", err)
+		return
+	}
+
+	if count < threshold {
+		return
+	}
+
+	lastSystem911Sent = time.Now()
+	c.Logger.Info("triggering system-wide 911: ", count, " outages in the last ", windowMinutes, " minutes")
+
+	if err := sendSystem911(count, windowMinutes); err != nil {
+		c.Logger.Info("flap 911 email failed: ", err)
+	}
+
+	webhooks, _ := AllEmergencyWebhooks(c)
+	for _, wh := range webhooks {
+		go wh.Process()
+	}
 }
 
 func SetSiteDown(c *Connection, s *models.Site) error {

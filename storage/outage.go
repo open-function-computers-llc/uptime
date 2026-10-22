@@ -138,3 +138,20 @@ func SiteMostRecentOutageDuration(siteID int, c *Connection) int {
 
 	return mostRecentOutage.Duration
 }
+
+// TotalOutagesInLastMinutes counts outages that are still open (outage_end is
+// the '0000-00-00 00:00:00' sentinel) or that ended within the given number of
+// minutes in the past, across all sites.
+func TotalOutagesInLastMinutes(minutes int, c *Connection) (int, error) {
+	var count int
+	row := c.DB.QueryRow(`
+        SELECT COUNT(*)
+        FROM outages
+        WHERE outage_end = '0000-00-00 00:00:00'
+           OR outage_end >= (UTC_TIMESTAMP() - INTERVAL ? MINUTE)
+    `, minutes)
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
