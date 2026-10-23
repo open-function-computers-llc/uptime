@@ -18,7 +18,7 @@
         <div class="col">
             <h1>Outage History ({{Object.values(outages).reduce((accumulator, count) => {
                 return accumulator + count;
-            }) }} Outages)</h1>
+            }) }} Outages, {{ outagesLast30Min }} in the last 30 minutes)</h1>
 
             <!-- Stats Grid -->
             <div class="d-flex gap-3 mb-5">
@@ -120,6 +120,10 @@ const props = defineProps({
     secErrMessage: {
         type: String,
         default: "",
+    },
+    outagesLast30Min: {
+        type: Number,
+        default: 0,
     },
 });
 

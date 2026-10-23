@@ -19,10 +19,11 @@ func (s *server) handleHistory() http.HandlerFunc {
 		}
 
 		s.inertiaManager.Render(w, r, "History", map[string]any{
-			"outages":         outages,
-			"outageDurations": outageDurations,
-			"countErrMessage": countErrMessage,
-			"secErrMessage":   secErrMessage,
+			"outages":          outages,
+			"outageDurations":  outageDurations,
+			"countErrMessage":  countErrMessage,
+			"secErrMessage":    secErrMessage,
+			"outagesLast30Min": s.outagesInLastMinutes(30),
 		})
 	}
 }

@@ -107,6 +107,15 @@ func (s *server) loadSites() error {
 func (s *server) outagesByDay() (map[string]int, error) {
 	return storage.OutagesByDay(s.storage)
 }
+
+func (s *server) outagesInLastMinutes(minutes int) int {
+	count, err := storage.TotalOutagesInLastMinutes(minutes, s.storage)
+	if err != nil {
+		s.log("failed to count recent outages: ", err)
+		return 0
+	}
+	return count
+}
 func (s *server) outagesDurationsByDay() (map[string]int, error) {
 	return storage.OutageDurationsByDay(s.storage)
 }

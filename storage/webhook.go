@@ -34,40 +34,6 @@ func StoreWebhook(name, url, method, hookType string, siteID int, c *Connection)
 	return err
 }
 
-// AllEmergencyWebhooks returns every emergency-type webhook across all sites,
-// used for system-wide notifications.
-func AllEmergencyWebhooks(c *Connection) ([]*models.Webhook, error) {
-	rows, err := c.DB.Query(`
-        SELECT id, website_id, hook_name, hook_url, hook_verb, hook_type
-        FROM webhooks
-        WHERE hook_type = ?
-    `, int(models.HooktypeEmergency))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	output := []*models.Webhook{}
-
-	for rows.Next() {
-		w := &models.Webhook{}
-		var hookType int
-
-		err := rows.Scan(&w.ID, &w.WebsiteID, &w.Name, &w.URL, &w.Verb, &hookType)
-		if err != nil {
-			return nil, err
-		}
-
-		w.Type = models.Hooktype(hookType)
-		output = append(output, w)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return output, nil
-}
-
 func SiteWebhooks(siteID int, c *Connection) ([]*models.Webhook, error) {
 	rows, err := c.DB.Query(`
         SELECT id, website_id, hook_name, hook_url, hook_verb, hook_type
